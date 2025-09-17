@@ -1,0 +1,14 @@
+<!-- Template base para pestañas dinámicas -->
+<div class="tab-content" id="{{ tab_id }}">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ tab_icon }} {{ tab_title }}</h2>
+            <p>{{ tab_description }}</p>
+        </div>
+        
+        <div class="card-body">
+            {{ tab_content | safe }}
+        </div>
+    </div>
+</div>
+
