@@ -27,15 +27,11 @@ APP_CONFIG = {
     'host': '127.0.0.1',
     'port': 5000,
     'debug': True,
-    'auto_reload': True,
-    'app_name': 'VideoWorkshop',
-    'app_description': 'Taller de video con subtitulación, audio y edición'
+    'auto_reload': True
 }
 
 # Configuración por defecto
 DEFAULT_CONFIG = {
-    'app_name': 'VideoWorkshop',
-    'app_description': 'Taller de video con subtitulación, audio y edición',
     'default_source_lang': 'en-US',
     'default_target_lang': 'es',
     'default_model': 'latest_short',
@@ -118,7 +114,7 @@ except Exception as e:
     tts_long_client = None
 
 # Configuración de Google Cloud Storage
-BUCKET_NAME = os.getenv('GOOGLE_STORAGE_BUCKET', 'subidas2')
+BUCKET_NAME = 'subidas2'
 
 def get_language_model(source_lang):
     """Determinar el modelo de idioma basado en el idioma de origen"""
@@ -135,7 +131,7 @@ def get_language_model(source_lang):
     return model
 
 def upload_audio_to_gcs(audio_path, blob_name):
-    """Subir archivo de audio a Google Cloud Storage y retornar URI de GCS"""
+    """Subir archivo de audio a Google Cloud Storage"""
     try:
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(blob_name)
@@ -143,46 +139,10 @@ def upload_audio_to_gcs(audio_path, blob_name):
         with open(audio_path, 'rb') as audio_file:
             blob.upload_from_file(audio_file, content_type='audio/wav')
         
-        # Retornar URI de GCS para Speech-to-Text
+        # Retornar URI de GCS
         gcs_uri = f"gs://{BUCKET_NAME}/{blob_name}"
         logger.info(f"☁️ Audio subido a GCS: {gcs_uri}")
         return gcs_uri
-        
-    except Exception as e:
-        logger.error(f"❌ Error subiendo audio a GCS: {e}")
-        raise e
-
-def upload_audio_to_gcs_public(audio_path, blob_name):
-    """Subir archivo de audio a Google Cloud Storage y retornar URL firmada"""
-    try:
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(blob_name)
-        
-        # Determinar content type basado en la extensión
-        if blob_name.endswith('.mp3'):
-            content_type = 'audio/mpeg'
-        elif blob_name.endswith('.wav'):
-            content_type = 'audio/wav'
-        elif blob_name.endswith('.flac'):
-            content_type = 'audio/flac'
-        else:
-            content_type = 'audio/mpeg'
-        
-        with open(audio_path, 'rb') as audio_file:
-            blob.upload_from_file(audio_file, content_type=content_type)
-        
-        # Generar URL firmada válida por 1 hora
-        from datetime import datetime, timedelta
-        expiration = datetime.utcnow() + timedelta(hours=1)
-        
-        audio_url = blob.generate_signed_url(
-            version="v4",
-            expiration=expiration,
-            method="GET"
-        )
-        
-        logger.info(f"☁️ Audio subido a GCS con URL firmada: {audio_url}")
-        return audio_url
         
     except Exception as e:
         logger.error(f"❌ Error subiendo audio a GCS: {e}")
@@ -565,7 +525,7 @@ def process_standard_audio(text_content, voice_language, voice_name, audio_forma
         
         # Subir a GCS
         blob_name = f"audio/synthesized/{timestamp}_{temp_filename}"
-        audio_url = upload_audio_to_gcs_public(temp_path, blob_name)
+        audio_url = upload_audio_to_gcs(temp_path, blob_name)
         
         # Limpiar archivo temporal
         os.unlink(temp_path)
@@ -600,26 +560,24 @@ def process_long_audio(text_content, voice_language, voice_name, audio_format,
         # Configurar salida
         output_gcs_uri = f"gs://{BUCKET_NAME}/audio/synthesized/{timestamp}_long_audio.wav"
         
-        # Configurar síntesis con el modelo más grande
+        # Configurar síntesis
         synthesis_input = texttospeech_v1beta1.SynthesisInput(text=text_content)
         
         voice = texttospeech_v1beta1.VoiceSelectionParams(
             language_code=voice_language,
-            name=voice_name,
-            ssml_gender=texttospeech_v1beta1.SsmlVoiceGender.NEUTRAL
+            name=voice_name
         )
         
         audio_config = texttospeech_v1beta1.AudioConfig(
             audio_encoding=texttospeech_v1beta1.AudioEncoding.LINEAR16,
             speaking_rate=speaking_rate,
             pitch=pitch,
-            volume_gain_db=volume_gain_db,
-            effects_profile_id=["telephony-class-application"]
+            volume_gain_db=volume_gain_db
         )
         
         # Crear request para Long Audio API
         request = texttospeech_v1beta1.SynthesizeLongAudioRequest(
-            parent="projects/eco-carver-466600-u1/locations/global",
+            parent="projects/eco-carver-466600/locations/global",
             input=synthesis_input,
             voice=voice,
             audio_config=audio_config,
@@ -735,7 +693,7 @@ def process_chunked_audio(text_content, voice_language, voice_name, audio_format
         
         # Subir a GCS
         blob_name = f"audio/synthesized/{timestamp}_{final_filename}"
-        audio_url = upload_audio_to_gcs_public(final_path, blob_name)
+        audio_url = upload_audio_to_gcs(final_path, blob_name)
         
         # Limpiar archivos temporales
         for segment_path in audio_segments:
@@ -785,7 +743,7 @@ def get_audio_encoding(format_name):
         'mp3': texttospeech.AudioEncoding.MP3,
         'wav': texttospeech.AudioEncoding.LINEAR16,
         'ogg': texttospeech.AudioEncoding.OGG_OPUS,
-        'flac': texttospeech.AudioEncoding.LINEAR16  # FLAC no está disponible, usar LINEAR16
+        'flac': texttospeech.AudioEncoding.FLAC
     }
     return encodings.get(format_name, texttospeech.AudioEncoding.MP3)
 
@@ -952,22 +910,15 @@ def process_video_merge(videos, output_quality, output_format, transition_type):
             final_size = final_video.size
             file_size = os.path.getsize(temp_output_path)
             
-            # Crear directorio de videos si no existe
-            videos_dir = os.path.join('static', 'videos', 'merged')
-            os.makedirs(videos_dir, exist_ok=True)
-            
-            # Mover video a directorio estático
-            final_video_path = os.path.join(videos_dir, output_filename)
-            import shutil
-            shutil.move(temp_output_path, final_video_path)
-            
-            # Generar URL local
-            video_url = f"/static/videos/merged/{output_filename}"
-            logger.info(f'📁 Video guardado localmente: {video_url}')
+            # Subir a Google Cloud Storage
+            logger.info('☁️ Subiendo video a Google Cloud Storage...')
+            blob_name = f"videos/merged/{timestamp}_{output_filename}"
+            video_url = upload_video_to_gcs(temp_output_path, blob_name)
             
             # Limpiar archivos temporales
             for temp_path in temp_video_paths:
                 os.unlink(temp_path)
+            os.unlink(temp_output_path)
             
             # Cerrar clips para liberar memoria
             for clip in video_clips + resized_clips:
@@ -1099,47 +1050,21 @@ def process_video_loop(video_file, target_duration, loop_quality, loop_format, l
             final_size = final_video.size
             file_size = os.path.getsize(temp_output_path)
             
-            # Crear directorio de videos si no existe
-            videos_dir = os.path.join('static', 'videos', 'loops')
-            os.makedirs(videos_dir, exist_ok=True)
+            # Subir a Google Cloud Storage
+            logger.info('☁️ Subiendo video a Google Cloud Storage...')
+            blob_name = f"videos/loops/{timestamp}_{output_filename}"
+            video_url = upload_video_to_gcs(temp_output_path, blob_name)
             
-            # Cerrar clips para liberar memoria ANTES de mover el archivo
+            # Limpiar archivos temporales
+            os.unlink(temp_video_path)
+            os.unlink(temp_output_path)
+            
+            # Cerrar clips para liberar memoria
             original_clip.close()
             resized_clip.close()
             final_video.close()
             for clip in loop_clips:
                 clip.close()
-            
-            # Esperar un momento para que se libere el archivo
-            import time
-            time.sleep(1)
-            
-            # Mover video a directorio estático
-            final_video_path = os.path.join(videos_dir, output_filename)
-            import shutil
-            
-            # Intentar mover el archivo con reintentos
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    shutil.move(temp_output_path, final_video_path)
-                    break
-                except (OSError, PermissionError) as e:
-                    if attempt < max_retries - 1:
-                        logger.warning(f'⚠️ Intento {attempt + 1} fallido, reintentando en 2 segundos...')
-                        time.sleep(2)
-                    else:
-                        # Como último recurso, copiar en lugar de mover
-                        shutil.copy2(temp_output_path, final_video_path)
-                        os.unlink(temp_output_path)
-                        logger.info('📁 Archivo copiado en lugar de movido')
-            
-            # Generar URL local
-            video_url = f"/static/videos/loops/{output_filename}"
-            logger.info(f'📁 Video guardado localmente: {video_url}')
-            
-            # Limpiar archivos temporales
-            os.unlink(temp_video_path)
             
             logger.info(f'✅ Loop de video creado exitosamente: {video_url}')
             

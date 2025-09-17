@@ -173,27 +173,8 @@ instalar_tts.bat
 ## 📁 Estructura del Proyecto
 
 ```
-VideoWorkShop/
-├── app.py                 # Aplicación principal Flask
-├── config.json           # Configuración de la aplicación
-├── requirements.txt      # Dependencias Python
-├── .env                  # Variables de entorno
-├── env.example          # Ejemplo de configuración
-├── templates/           # Plantillas HTML
-│   ├── base.html
-│   ├── index.html
-│   └── ...
-├── static/              # Archivos estáticos
-│   ├── css/
-│   ├── js/
-│   └── ...
-├── venv/                # Entorno virtual
-├── Backups/             # Checkpoints de respaldo
-├── backup.bat           # Script de backup
-├── restore.bat          # Script de restauración
-├── iniciar_app.bat      # Script de inicio
-├── instalar_tts.bat     # Script de instalación TTS
-└── README.md            # Documentación del proyecto
+
+
 ```
 
 ## 🔧 Tecnologías Utilizadas

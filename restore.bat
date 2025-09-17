@@ -187,6 +187,10 @@ if exist "%selected_checkpoint%\instalar_tts.bat" (
     copy "%selected_checkpoint%\instalar_tts.bat" "." >nul
     echo [OK] instalar_tts.bat restaurado
 )
+if exist "%selected_checkpoint%\sync_to_github.bat" (
+    copy "%selected_checkpoint%\sync_to_github.bat" "." >nul
+    echo [OK] sync_to_github.bat restaurado
+)
 if exist "%selected_checkpoint%\env.example" (
     copy "%selected_checkpoint%\env.example" "." >nul
     echo [OK] env.example restaurado
@@ -205,6 +209,15 @@ if exist "%selected_checkpoint%\static" (
     echo [OK] static/ restaurado
 )
 
+REM Sincronizar con GitHub después de restaurar
+echo [INFO] Sincronizando con carpeta Github...
+if exist "sync_to_github.bat" (
+    call "sync_to_github.bat"
+    echo [OK] Sincronización con GitHub completada
+) else (
+    echo [WARNING] sync_to_github.bat no encontrado, saltando sincronización
+)
+
 echo.
 echo ========================================
 echo        RESTAURACIÓN COMPLETADA
@@ -221,10 +234,12 @@ echo   - .env (variables de entorno)
 echo   - eco-carver-466600-u1-978cfde80c53.json (credenciales Google)
 echo   - iniciar_app.bat (script para iniciar aplicacion)
 echo   - instalar_tts.bat (script para instalar TTS)
+echo   - sync_to_github.bat (script para sincronizar con GitHub)
 echo   - env.example (ejemplo de variables de entorno)
 echo   - templates/ (directorio completo)
 echo   - static/ (directorio completo)
 echo.
 echo [INFO] Backup de seguridad del estado anterior guardado en: %current_backup%
+echo [INFO] Carpeta Github sincronizada y lista para subir
 echo.
 pause

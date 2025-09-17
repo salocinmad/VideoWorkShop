@@ -85,6 +85,10 @@ if exist "restore.bat" (
     copy "restore.bat" "%backup_dir%\restore.bat"
     echo [OK] restore.bat copiado
 )
+if exist "sync_to_github.bat" (
+    copy "sync_to_github.bat" "%backup_dir%\sync_to_github.bat"
+    echo [OK] sync_to_github.bat copiado
+)
 
 REM Copiar scripts de aplicacion
 echo [INFO] Respaldando scripts de aplicacion...
@@ -143,6 +147,15 @@ echo Directorio: %backup_dir% >> "%backup_dir%\backup_info.txt"
 echo Nombre original: %checkpoint_name% >> "%backup_dir%\backup_info.txt"
 echo [OK] Información del backup creada
 
+REM Sincronizar con GitHub
+echo [INFO] Sincronizando con carpeta Github...
+if exist "sync_to_github.bat" (
+    call "sync_to_github.bat"
+    echo [OK] Sincronización con GitHub completada
+) else (
+    echo [WARNING] sync_to_github.bat no encontrado, saltando sincronización
+)
+
 echo.
 echo [OK] Respaldo completado exitosamente
 echo [INFO] Checkpoint: %checkpoint_name%
@@ -157,11 +170,12 @@ echo   - .env (variables de entorno)
 echo   - eco-carver-466600-u1-978cfde80c53.json (credenciales Google)
 echo   - templates/ (directorio completo)
 echo   - static/ (directorio completo, sin videos/audios)
-echo   - backup.bat, restore.bat (scripts de backup)
+echo   - backup.bat, restore.bat, sync_to_github.bat (scripts de backup)
 echo   - iniciar_app.bat (script para iniciar aplicacion)
 echo   - instalar_tts.bat (script para instalar TTS)
 echo   - env.example (ejemplo de variables de entorno)
 echo.
 echo [INFO] Para restaurar: usar restore.bat
+echo [INFO] Para sincronizar con GitHub: usar sync_to_github.bat
 echo.
 pause
