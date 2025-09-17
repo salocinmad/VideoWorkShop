@@ -243,4 +243,3 @@ echo [INFO] Backup de seguridad del estado anterior guardado en: %current_backup
 echo [INFO] Carpeta Github sincronizada y lista para subir
 echo.
 pause
-

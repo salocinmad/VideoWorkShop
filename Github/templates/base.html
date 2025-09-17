@@ -6,9 +6,8 @@
     <title>{% block title %}Sistema de Subtitulación{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="header-content">
                 <h1 class="logo">
@@ -24,46 +23,40 @@
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
         <nav class="tabs">
             <div class="tabs-container">
                 <button class="tab active" data-tab="subtitulos">
                     <span class="tab-icon">🎥</span>
-                    <span class="tab-text">Subtitular Video</span>
+                    Subtitular Video
                 </button>
                 <button class="tab" data-tab="texto-audio">
                     <span class="tab-icon">🔊</span>
-                    <span class="tab-text">Texto a Audio</span>
+                    Texto a Audio
                 </button>
                 <button class="tab" data-tab="unir-videos">
                     <span class="tab-icon">🎬</span>
-                    <span class="tab-text">Unir Videos</span>
+                    Unir Videos
                 </button>
                 <button class="tab" data-tab="loop-video">
                     <span class="tab-icon">🔄</span>
-                    <span class="tab-text">Loop de Video</span>
+                    Loop de Video
                 </button>
                 <button class="tab" data-tab="configuracion">
                     <span class="tab-icon">⚙️</span>
-                    <span class="tab-text">Configuración</span>
+                    Configuración
                 </button>
                 <button class="tab" data-tab="gestion-pestanas">
                     <span class="tab-icon">📋</span>
-                    <span class="tab-text">Gestión de Pestañas</span>
+                    Gestión de Pestañas
                 </button>
             </div>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             {% block content %}{% endblock %}
         </main>
     </div>
 
-    <!-- Notification Container -->
-    <div id="notificationContainer"></div>
-
-    <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

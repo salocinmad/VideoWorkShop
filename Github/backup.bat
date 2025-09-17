@@ -179,4 +179,3 @@ echo [INFO] Para restaurar: usar restore.bat
 echo [INFO] Para sincronizar con GitHub: usar sync_to_github.bat
 echo.
 pause
-

@@ -1,33 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Pestaña: Subtitular Video -->
 <div class="tab-content active" id="subtitulos" data-tab="subtitulos">
     <div class="card">
         <div class="card-header">
             <h2>🎥 Subtitular Video</h2>
             <p>Sube un video y genera subtítulos automáticamente con traducción</p>
         </div>
-        
         <div class="card-body">
             <form id="videoForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Seleccionar Video:</label>
-                    <div class="video-upload-container">
-                        <div class="video-upload-item">
-                            <input type="file" id="videoFile" name="video" accept="video/*" class="video-input" required>
-                            <label for="videoFile" class="video-upload-label">
-                                <span class="upload-icon" data-type="video">🎬</span>
-                                <span class="upload-text">Seleccionar Video</span>
-                            </label>
-                            <div class="video-info" id="fileInfo" style="display: none;">
-                                <span class="video-name"></span>
-                                <span class="video-duration"></span>
-                            </div>
+                    <div class="file-upload-container">
+                        <input type="file" id="videoFile" name="video" accept="video/*" class="file-input" required>
+                        <label for="videoFile" class="file-upload-label">
+                            <span class="upload-icon">🎬</span>
+                            <span class="upload-text">Seleccionar Video</span>
+                        </label>
+                        <div class="file-info" id="videoFileInfo" style="display: none;">
+                            <span class="file-name"></span>
+                            <span class="file-size"></span>
                         </div>
                     </div>
-                    <small class="form-text text-muted">
-                        🎬 Selecciona un archivo de video para generar subtítulos automáticamente
-                    </small>
                 </div>
 
                 <div class="form-row">
@@ -49,9 +44,8 @@
                             <option value="zh-TW">Chino (Tradicional)</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="targetLang">Idioma de Subtítulos:</label>
+                        <label for="targetLang">Idioma de Traducción:</label>
                         <select id="targetLang" name="target_lang">
                             <option value="es">Español</option>
                             <option value="en">Inglés</option>
@@ -62,8 +56,6 @@
                             <option value="ja">Japonés</option>
                             <option value="ko">Coreano</option>
                             <option value="zh">Chino</option>
-                            <option value="ru">Ruso</option>
-                            <option value="ar">Árabe</option>
                         </select>
                     </div>
                 </div>
@@ -72,59 +64,56 @@
                     <div class="form-group">
                         <label for="audioQuality">Calidad de Audio:</label>
                         <select id="audioQuality" name="audio_quality">
-                            <option value="optimized">Optimizada (16kHz)</option>
-                            <option value="high">Alta (44.1kHz)</option>
-                            <option value="movies">Películas (16kHz)</option>
+                            <option value="optimized">Optimizada</option>
+                            <option value="high">Alta</option>
+                            <option value="medium">Media</option>
+                            <option value="low">Baja</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="audioChannels">Configuración de Canales:</label>
+                        <label for="audioChannels">Canales de Audio:</label>
                         <select id="audioChannels" name="audio_channels">
                             <option value="mono">Mono</option>
-                            <option value="stereo">Stereo</option>
+                            <option value="stereo">Estéreo</option>
                         </select>
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="audioOptimization">Optimización de Audio:</label>
+                    <select id="audioOptimization" name="audio_optimization">
+                        <option value="dialogue">Diálogo</option>
+                        <option value="music">Música</option>
+                        <option value="mixed">Mixto</option>
+                    </select>
+                </div>
+
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="audioOptimization">Optimización:</label>
-                        <select id="audioOptimization" name="audio_optimization">
-                            <option value="dialogue">Diálogo</option>
-                            <option value="general">General</option>
-                        </select>
-                    </div>
-                    
                     <div class="form-group">
                         <label for="subtitleLength">Longitud de Subtítulos:</label>
                         <select id="subtitleLength" name="subtitleLength">
-                            <option value="short">Cortos</option>
-                            <option value="medium">Medios</option>
-                            <option value="long">Largos</option>
+                            <option value="short">Corta (1-2 líneas)</option>
+                            <option value="medium">Media (2-3 líneas)</option>
+                            <option value="long">Larga (3+ líneas)</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group">
                         <label for="subtitleDuration">Duración de Subtítulos:</label>
                         <select id="subtitleDuration" name="subtitleDuration">
-                            <option value="fast">Rápidos</option>
-                            <option value="normal">Normales</option>
-                            <option value="slow">Lentos</option>
+                            <option value="short">Corta (2-3 segundos)</option>
+                            <option value="medium">Media (3-5 segundos)</option>
+                            <option value="long">Larga (5+ segundos)</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="processBtn">
-                        <span class="btn-icon">🚀</span>
-                        Procesar Video
-                    </button>
-                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-icon">🚀</span>
+                    Procesar Video
+                </button>
             </form>
 
+            <!-- Progress Section -->
             <div id="progressSection" class="progress-section" style="display: none;">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
@@ -132,510 +121,53 @@
                 <div class="progress-text" id="progressText">Iniciando procesamiento...</div>
             </div>
 
+            <!-- Results Section -->
             <div id="resultsSection" class="results-section" style="display: none;">
                 <div class="results-header">
-                    <h3>✅ Procesamiento Completado</h3>
+                    <h3>📋 Resultados</h3>
+                    <button onclick="downloadSubtitles()" class="btn btn-success">
+                        <span class="btn-icon">💾</span>
+                        Descargar Subtítulos
+                    </button>
                 </div>
-                
                 <div class="results-content">
                     <div class="transcript-section">
-                        <h4>📝 Transcripción Original:</h4>
+                        <h4>📝 Transcripción Original</h4>
                         <div class="transcript-box" id="originalTranscript"></div>
                     </div>
-                    
                     <div class="transcript-section">
-                        <h4>🌍 Traducción:</h4>
+                        <h4>🌍 Transcripción Traducida</h4>
                         <div class="transcript-box" id="translatedTranscript"></div>
                     </div>
                 </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="downloadSubtitles('srt')">
-                        <span class="btn-icon">📄</span>
-                        Descargar SRT
-                    </button>
-                    <button class="btn btn-success" onclick="downloadSubtitles('vtt')">
-                        <span class="btn-icon">📄</span>
-                        Descargar VTT
-                    </button>
-                    <button class="btn btn-warning" onclick="clearBucket()">
-                        <span class="btn-icon">🧹</span>
-                        Limpiar Bucket
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Pestaña de Unir Videos -->
-<div class="tab-content" id="unir-videos" data-tab="unir-videos">
-    <div class="card">
-        <div class="card-header">
-            <h2>🎬 Unir Videos</h2>
-            <p>Combina hasta 4 videos MP4 en uno solo por orden</p>
-        </div>
-        
-        <div class="card-body">
-            <form id="mergeVideosForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>Seleccionar Videos (máximo 4):</label>
-                    <div class="video-upload-container">
-                        <div class="video-upload-item">
-                            <input type="file" id="video1" name="video1" accept=".mp4" class="video-input">
-                            <label for="video1" class="video-upload-label">
-                                <span class="upload-icon">📹</span>
-                                <span class="upload-text">Video 1</span>
-                            </label>
-                            <div class="video-info" id="video1Info" style="display: none;">
-                                <span class="video-name"></span>
-                                <span class="video-duration"></span>
-                            </div>
-                        </div>
-                        
-                        <div class="video-upload-item">
-                            <input type="file" id="video2" name="video2" accept=".mp4" class="video-input">
-                            <label for="video2" class="video-upload-label">
-                                <span class="upload-icon">📹</span>
-                                <span class="upload-text">Video 2</span>
-                            </label>
-                            <div class="video-info" id="video2Info" style="display: none;">
-                                <span class="video-name"></span>
-                                <span class="video-duration"></span>
-                            </div>
-                        </div>
-                        
-                        <div class="video-upload-item">
-                            <input type="file" id="video3" name="video3" accept=".mp4" class="video-input">
-                            <label for="video3" class="video-upload-label">
-                                <span class="upload-icon">📹</span>
-                                <span class="upload-text">Video 3</span>
-                            </label>
-                            <div class="video-info" id="video3Info" style="display: none;">
-                                <span class="video-name"></span>
-                                <span class="video-duration"></span>
-                            </div>
-                        </div>
-                        
-                        <div class="video-upload-item">
-                            <input type="file" id="video4" name="video4" accept=".mp4" class="video-input">
-                            <label for="video4" class="video-upload-label">
-                                <span class="upload-icon">📹</span>
-                                <span class="upload-text">Video 4</span>
-                            </label>
-                            <div class="video-info" id="video4Info" style="display: none;">
-                                <span class="video-name"></span>
-                                <span class="video-duration"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <small class="form-text text-muted">
-                        📹 Selecciona hasta 4 videos MP4. Se unirán en el orden que los selecciones.
-                    </small>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="outputQuality">Calidad de Salida:</label>
-                        <select id="outputQuality" name="output_quality">
-                            <option value="high">Alta Calidad (1080p)</option>
-                            <option value="medium" selected>Calidad Media (720p)</option>
-                            <option value="low">Calidad Baja (480p)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="outputFormat">Formato de Salida:</label>
-                        <select id="outputFormat" name="output_format">
-                            <option value="mp4" selected>MP4 (Recomendado)</option>
-                            <option value="avi">AVI</option>
-                            <option value="mov">MOV</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="transitionType">Tipo de Transición:</label>
-                    <select id="transitionType" name="transition_type">
-                        <option value="none" selected>Sin Transición (Corte directo)</option>
-                        <option value="fade">Fundido (Fade)</option>
-                        <option value="crossfade">Cruzado (Crossfade)</option>
-                    </select>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="mergeBtn">
-                        <span class="btn-icon">🎬</span>
-                        Unir Videos
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="clearVideosBtn">
-                        <span class="btn-icon">🗑️</span>
-                        Limpiar Selección
-                    </button>
-                </div>
-            </form>
-
-            <div id="mergeProgressSection" class="progress-section" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="mergeProgressFill"></div>
-                </div>
-                <div class="progress-text" id="mergeProgressText">Procesando videos...</div>
-            </div>
-
-            <div id="mergeResultsSection" class="results-section" style="display: none;">
-                <div class="results-header">
-                    <h3>✅ Videos Unidos Exitosamente</h3>
-                </div>
-                
-                <div class="results-content">
-                    <div class="video-preview">
-                        <h4>🎬 Video Resultante:</h4>
-                        <div class="video-player" id="mergedVideoPlayer"></div>
-                    </div>
-                    
-                    <div class="video-details">
-                        <h4>📊 Detalles del Video:</h4>
-                        <div class="video-details-box" id="videoDetailsBox"></div>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="downloadMergedVideo()">
-                        <span class="btn-icon">💾</span>
-                        Descargar Video
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Pestaña de Loop de Video -->
-<div class="tab-content" id="loop-video" data-tab="loop-video">
-    <div class="card">
-        <div class="card-header">
-            <h2>🔄 Loop de Video</h2>
-            <p>Repite un video hasta alcanzar la duración deseada</p>
-        </div>
-        
-        <div class="card-body">
-            <form id="loopVideoForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>Seleccionar Video:</label>
-                    <div class="video-upload-container">
-                        <div class="video-upload-item">
-                            <input type="file" id="loopVideoFile" name="video" accept="video/*" class="video-input" required>
-                            <label for="loopVideoFile" class="video-upload-label">
-                                <span class="upload-icon" data-type="video">🎬</span>
-                                <span class="upload-text">Seleccionar Video</span>
-                            </label>
-                            <div class="video-info" id="loopVideoInfo" style="display: none;">
-                                <span class="video-name"></span>
-                                <span class="video-duration"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <small class="form-text text-muted">
-                        🎬 Selecciona un video para crear un loop con la duración deseada
-                    </small>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="targetDuration">Duración Objetivo:</label>
-                        <div class="duration-input-group">
-                            <input type="number" id="targetMinutes" name="target_minutes" min="0" max="59" value="1" placeholder="Minutos">
-                            <span class="duration-separator">:</span>
-                            <input type="number" id="targetSeconds" name="target_seconds" min="0" max="59" value="0" placeholder="Segundos">
-                        </div>
-                        <small class="form-text text-muted">
-                            ⏱️ Duración total que tendrá el video con loop
-                        </small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="loopQuality">Calidad de Salida:</label>
-                        <select id="loopQuality" name="loop_quality">
-                            <option value="high">Alta Calidad (1080p)</option>
-                            <option value="medium" selected>Calidad Media (720p)</option>
-                            <option value="low">Calidad Baja (480p)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="loopTransition">Transición entre Loops:</label>
-                        <select id="loopTransition" name="loop_transition">
-                            <option value="none" selected>Sin Transición (Corte directo)</option>
-                            <option value="fade">Fundido (Fade)</option>
-                            <option value="crossfade">Cruzado (Crossfade)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="loopFormat">Formato de Salida:</label>
-                        <select id="loopFormat" name="loop_format">
-                            <option value="mp4" selected>MP4 (Recomendado)</option>
-                            <option value="avi">AVI</option>
-                            <option value="mov">MOV</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="loopPreview">Vista Previa del Loop:</label>
-                    <div class="loop-preview" id="loopPreview" style="display: none;">
-                        <div class="preview-info">
-                            <div class="preview-item">
-                                <span class="preview-label">Duración Original:</span>
-                                <span class="preview-value" id="originalDuration">-</span>
-                            </div>
-                            <div class="preview-item">
-                                <span class="preview-label">Duración Objetivo:</span>
-                                <span class="preview-value" id="targetDurationDisplay">-</span>
-                            </div>
-                            <div class="preview-item">
-                                <span class="preview-label">Loops Necesarios:</span>
-                                <span class="preview-value" id="loopsNeeded">-</span>
-                            </div>
-                            <div class="preview-item">
-                                <span class="preview-label">Duración Final:</span>
-                                <span class="preview-value" id="finalDuration">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="createLoopBtn">
-                        <span class="btn-icon">🔄</span>
-                        Crear Loop
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="clearLoopBtn">
-                        <span class="btn-icon">🗑️</span>
-                        Limpiar
-                    </button>
-                </div>
-            </form>
-
-            <div id="loopProgressSection" class="progress-section" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="loopProgressFill"></div>
-                </div>
-                <div class="progress-text" id="loopProgressText">Creando loop...</div>
-            </div>
-
-            <div id="loopResultsSection" class="results-section" style="display: none;">
-                <div class="results-header">
-                    <h3>✅ Loop Creado Exitosamente</h3>
-                </div>
-                
-                <div class="results-content">
-                    <div class="video-section">
-                        <h4>🎬 Video con Loop:</h4>
-                        <div class="video-player" id="loopVideoPlayer"></div>
-                    </div>
-                    
-                    <div class="video-details">
-                        <h4>📊 Detalles del Video:</h4>
-                        <div class="details-grid" id="loopVideoDetails"></div>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="downloadLoopVideo()">
-                        <span class="btn-icon">💾</span>
-                        Descargar Video
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="tab-content" id="configuracion" data-tab="configuracion">
-    <div class="card">
-        <div class="card-header">
-            <h2>⚙️ Configuración del Sistema</h2>
-            <p>Configura los parámetros del servidor y la aplicación</p>
-        </div>
-        
-        <div class="card-body">
-            <form id="configForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="configHost">Host:</label>
-                        <input type="text" id="configHost" name="host" placeholder="127.0.0.1">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="configPort">Puerto:</label>
-                        <input type="number" id="configPort" name="port" placeholder="5050" min="1000" max="65535">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="configDebug">Modo Debug:</label>
-                        <select id="configDebug" name="debug">
-                            <option value="true">Activado</option>
-                            <option value="false">Desactivado</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="configAutoReload">Auto-reload:</label>
-                        <select id="configAutoReload" name="auto_reload">
-                            <option value="true">Activado</option>
-                            <option value="false">Desactivado</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="configSourceLang">Idioma Origen por Defecto:</label>
-                        <select id="configSourceLang" name="default_source_lang">
-                            <option value="en-US">Inglés (EE.UU.)</option>
-                            <option value="en-GB">Inglés (Reino Unido)</option>
-                            <option value="es-ES">Español (España)</option>
-                            <option value="es-MX">Español (México)</option>
-                            <option value="fr-FR">Francés</option>
-                            <option value="de-DE">Alemán</option>
-                            <option value="it-IT">Italiano</option>
-                            <option value="pt-BR">Portugués (Brasil)</option>
-                            <option value="pt-PT">Portugués (Portugal)</option>
-                            <option value="ja-JP">Japonés</option>
-                            <option value="ko-KR">Coreano</option>
-                            <option value="zh-CN">Chino (Simplificado)</option>
-                            <option value="zh-TW">Chino (Tradicional)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="configTargetLang">Idioma Destino por Defecto:</label>
-                        <select id="configTargetLang" name="default_target_lang">
-                            <option value="es">Español</option>
-                            <option value="en">Inglés</option>
-                            <option value="fr">Francés</option>
-                            <option value="de">Alemán</option>
-                            <option value="it">Italiano</option>
-                            <option value="pt">Portugués</option>
-                            <option value="ja">Japonés</option>
-                            <option value="ko">Coreano</option>
-                            <option value="zh">Chino</option>
-                            <option value="ru">Ruso</option>
-                            <option value="ar">Árabe</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="configTheme">Tema:</label>
-                        <select id="configTheme" name="theme">
-                            <option value="auto">Automático (Sistema)</option>
-                            <option value="light">Claro</option>
-                            <option value="dark">Oscuro</option>
-                        </select>
-                        <small class="form-text text-muted">
-                            🎨 "Automático" detecta el tema según la configuración de tu sistema operativo
-                        </small>
-                        <div style="margin-top: 10px;">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="forceAutoTheme()">
-                                🔄 Forzar Detección Automática
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="clearAllThemeSettings()">
-                                🧹 Limpiar Todo
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="console.log('Sistema prefiere oscuro:', window.matchMedia('(prefers-color-scheme: dark)').matches); console.log('Tema actual:', document.documentElement.getAttribute('data-theme')); console.log('Tema guardado:', localStorage.getItem('theme')); console.log('Usuario cambió:', localStorage.getItem('userChangedTheme'));">
-                                🔍 Debug Tema
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="configAudioSampleRate">Frecuencia de Audio:</label>
-                        <select id="configAudioSampleRate" name="audio_sample_rate">
-                            <option value="16000">16 kHz (Optimizada)</option>
-                            <option value="44100">44.1 kHz (Alta Calidad)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="configAudioQuality">Calidad de Audio:</label>
-                        <select id="configAudioQuality" name="audio_quality">
-                            <option value="optimized">Optimizada</option>
-                            <option value="high">Alta</option>
-                            <option value="movies">Películas</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="configAudioChannels">Canales de Audio:</label>
-                        <select id="configAudioChannels" name="audio_channels">
-                            <option value="mono">Mono</option>
-                            <option value="stereo">Stereo</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="configAudioOptimization">Optimización de Audio:</label>
-                        <select id="configAudioOptimization" name="audio_optimization">
-                            <option value="dialogue">Diálogo</option>
-                            <option value="general">General</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <span class="btn-icon">💾</span>
-                        Guardar Configuración
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="restartServer()">
-                        <span class="btn-icon">🔄</span>
-                        Reiniciar Servidor
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
+<!-- Pestaña: Texto a Audio -->
 <div class="tab-content" id="texto-audio" data-tab="texto-audio">
     <div class="card">
         <div class="card-header">
             <h2>🔊 Texto a Audio</h2>
             <p>Convierte documentos de texto a audio usando Google Text-to-Speech</p>
         </div>
-        
         <div class="card-body">
             <form id="textToAudioForm" enctype="multipart/form-data">
-                           <div class="form-group">
-                               <label>Seleccionar Archivo TXT:</label>
-                               <div class="video-upload-container">
-                                   <div class="video-upload-item">
-                                       <input type="file" id="textFile" name="text_file" accept=".txt" class="video-input" required>
-                                       <label for="textFile" class="video-upload-label">
-                                           <span class="upload-icon" data-type="text">📄</span>
-                                           <span class="upload-text">Seleccionar TXT</span>
-                                       </label>
-                                       <div class="video-info" id="textFileInfo" style="display: none;">
-                                           <span class="video-name"></span>
-                                           <span class="video-duration"></span>
-                                       </div>
-                                   </div>
-                               </div>
-                               <small class="form-text text-muted">
-                                   📄 Sin límite de tamaño - archivos grandes se procesan con Google Long Audio API
-                               </small>
-                           </div>
+                <div class="form-group">
+                    <label>Seleccionar Archivo de Texto:</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="textFile" name="text_file" accept=".txt" class="file-input" required>
+                        <label for="textFile" class="file-upload-label">
+                            <span class="upload-icon">📄</span>
+                            <span class="upload-text">Seleccionar Archivo TXT</span>
+                        </label>
+                        <div class="file-info" id="textFileInfo" style="display: none;">
+                            <span class="file-name"></span>
+                            <span class="file-size"></span>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -654,71 +186,67 @@
                             <option value="zh-CN">Chino (Simplificado)</option>
                         </select>
                     </div>
-                    
-                               <div class="form-group">
-                                   <label for="voiceName">Tipo de Voz:</label>
-                                   <select id="voiceName" name="voice_name">
-                                       {% include 'voice_options.html' %}
-                                   </select>
-                                   <small class="form-text text-muted">
-                                       ⭐ Neural2: Más expresiva y natural | ⭐⭐ WaveNet: Muy expresiva y de alta calidad
-                                   </small>
-                               </div>
+                    <div class="form-group">
+                        <label for="voiceName">Voz:</label>
+                        <select id="voiceName" name="voice_name">
+                            <option value="">Seleccionar voz...</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="audioFormat">Formato de Audio:</label>
                         <select id="audioFormat" name="audio_format">
-                            <option value="MP3">MP3 (Recomendado)</option>
-                            <option value="WAV">WAV (Alta Calidad)</option>
-                            <option value="OGG_OPUS">OGG Opus</option>
-                            <option value="FLAC">FLAC (Sin Pérdida)</option>
+                            <option value="mp3">MP3</option>
+                            <option value="wav">WAV</option>
+                            <option value="ogg">OGG</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
                         <label for="speakingRate">Velocidad de Habla:</label>
                         <select id="speakingRate" name="speaking_rate">
-                            <option value="0.8">Lenta (0.8x)</option>
+                            <option value="0.25">Muy Lenta (0.25x)</option>
+                            <option value="0.5">Lenta (0.5x)</option>
+                            <option value="0.75">Algo Lenta (0.75x)</option>
                             <option value="1.0" selected>Normal (1.0x)</option>
-                            <option value="1.2">Rápida (1.2x)</option>
-                            <option value="1.4">Muy Rápida (1.4x)</option>
+                            <option value="1.25">Algo Rápida (1.25x)</option>
+                            <option value="1.5">Rápida (1.5x)</option>
+                            <option value="2.0">Muy Rápida (2.0x)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="pitch">Tono de Voz:</label>
+                        <label for="pitch">Tono:</label>
                         <select id="pitch" name="pitch">
-                            <option value="-10.0">Muy Grave</option>
-                            <option value="-5.0">Grave</option>
-                            <option value="0.0" selected>Normal</option>
-                            <option value="5.0">Agudo</option>
-                            <option value="10.0">Muy Agudo</option>
+                            <option value="-20.0">Muy Grave (-20.0)</option>
+                            <option value="-10.0">Grave (-10.0)</option>
+                            <option value="0.0" selected>Normal (0.0)</option>
+                            <option value="10.0">Agudo (10.0)</option>
+                            <option value="20.0">Muy Agudo (20.0)</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
                         <label for="volumeGainDb">Volumen:</label>
                         <select id="volumeGainDb" name="volume_gain_db">
-                            <option value="-5.0">Bajo</option>
-                            <option value="0.0" selected>Normal</option>
-                            <option value="5.0">Alto</option>
-                            <option value="10.0">Muy Alto</option>
+                            <option value="-16.0">Muy Bajo (-16.0)</option>
+                            <option value="-8.0">Bajo (-8.0)</option>
+                            <option value="0.0" selected>Normal (0.0)</option>
+                            <option value="8.0">Alto (8.0)</option>
+                            <option value="16.0">Muy Alto (16.0)</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="convertBtn">
-                        <span class="btn-icon">🔊</span>
-                        Convertir a Audio
-                    </button>
-                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-icon">🎵</span>
+                    Convertir a Audio
+                </button>
             </form>
 
+            <!-- Progress Section -->
             <div id="textProgressSection" class="progress-section" style="display: none;">
                 <div class="progress-bar">
                     <div class="progress-fill" id="textProgressFill"></div>
@@ -726,62 +254,478 @@
                 <div class="progress-text" id="textProgressText">Procesando texto...</div>
             </div>
 
+            <!-- Results Section -->
             <div id="textResultsSection" class="results-section" style="display: none;">
                 <div class="results-header">
-                    <h3>✅ Conversión Completada</h3>
-                </div>
-                
-                <div class="results-content">
-                    <div class="audio-section">
-                        <h4>🎵 Audio Generado:</h4>
-                        <div class="audio-player" id="audioPlayer"></div>
-                    </div>
-                    
-                    <div class="text-preview">
-                        <h4>📄 Texto Procesado:</h4>
-                        <div class="text-preview-box" id="textPreview"></div>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="downloadAudio()">
+                    <h3>🎵 Audio Generado</h3>
+                    <button onclick="downloadAudio()" class="btn btn-success">
                         <span class="btn-icon">💾</span>
                         Descargar Audio
                     </button>
+                </div>
+                <div class="results-content">
+                    <div class="audio-section">
+                        <h4>🔊 Reproducir Audio</h4>
+                        <div class="audio-player" id="audioPlayer"></div>
+                    </div>
+                    <div class="text-preview-section">
+                        <h4>📄 Vista Previa del Texto</h4>
+                        <div class="text-preview-box" id="textPreview"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Pestaña: Unir Videos -->
+<div class="tab-content" id="unir-videos" data-tab="unir-videos">
+    <div class="card">
+        <div class="card-header">
+            <h2>🎬 Unir Videos</h2>
+            <p>Combina hasta 4 videos MP4 en uno solo por orden</p>
+        </div>
+        <div class="card-body">
+            <form id="mergeVideosForm" enctype="multipart/form-data">
+                <div class="videos-grid">
+                    <div class="video-slot">
+                        <div class="file-upload-container">
+                            <input type="file" id="video1" name="video1" accept=".mp4" class="file-input">
+                            <label for="video1" class="file-upload-label">
+                                <span class="upload-icon">🎬</span>
+                                <span class="upload-text">Video 1</span>
+                            </label>
+                            <div class="file-info" id="video1Info" style="display: none;">
+                                <span class="file-name"></span>
+                                <span class="file-size"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-slot">
+                        <div class="file-upload-container">
+                            <input type="file" id="video2" name="video2" accept=".mp4" class="file-input">
+                            <label for="video2" class="file-upload-label">
+                                <span class="upload-icon">🎬</span>
+                                <span class="upload-text">Video 2</span>
+                            </label>
+                            <div class="file-info" id="video2Info" style="display: none;">
+                                <span class="file-name"></span>
+                                <span class="file-size"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-slot">
+                        <div class="file-upload-container">
+                            <input type="file" id="video3" name="video3" accept=".mp4" class="file-input">
+                            <label for="video3" class="file-upload-label">
+                                <span class="upload-icon">🎬</span>
+                                <span class="upload-text">Video 3</span>
+                            </label>
+                            <div class="file-info" id="video3Info" style="display: none;">
+                                <span class="file-name"></span>
+                                <span class="file-size"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-slot">
+                        <div class="file-upload-container">
+                            <input type="file" id="video4" name="video4" accept=".mp4" class="file-input">
+                            <label for="video4" class="file-upload-label">
+                                <span class="upload-icon">🎬</span>
+                                <span class="upload-text">Video 4</span>
+                            </label>
+                            <div class="file-info" id="video4Info" style="display: none;">
+                                <span class="file-name"></span>
+                                <span class="file-size"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="outputQuality">Calidad de Salida:</label>
+                        <select id="outputQuality" name="output_quality">
+                            <option value="high">Alta (1080p)</option>
+                            <option value="medium" selected>Media (720p)</option>
+                            <option value="low">Baja (480p)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="outputFormat">Formato de Salida:</label>
+                        <select id="outputFormat" name="output_format">
+                            <option value="mp4" selected>MP4</option>
+                            <option value="avi">AVI</option>
+                            <option value="mov">MOV</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="transitionType">Tipo de Transición:</label>
+                    <select id="transitionType" name="transition_type">
+                        <option value="none">Sin Transición</option>
+                        <option value="fade">Fade</option>
+                        <option value="crossfade">Crossfade</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">🔗</span>
+                        Unir Videos
+                    </button>
+                    <button type="button" onclick="clearVideoSelection()" class="btn btn-secondary">
+                        <span class="btn-icon">🗑️</span>
+                        Limpiar Selección
+                    </button>
+                </div>
+            </form>
+
+            <!-- Progress Section -->
+            <div id="mergeProgressSection" class="progress-section" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="mergeProgressFill"></div>
+                </div>
+                <div class="progress-text" id="mergeProgressText">Procesando videos...</div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="mergeResultsSection" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h3>🎬 Video Unido</h3>
+                    <button onclick="downloadMergedVideo()" class="btn btn-success">
+                        <span class="btn-icon">💾</span>
+                        Descargar Video
+                    </button>
+                </div>
+                <div class="results-content">
+                    <div class="video-section">
+                        <h4>🎥 Reproducir Video</h4>
+                        <div class="video-player" id="mergedVideoPlayer"></div>
+                    </div>
+                    <div class="video-details-section">
+                        <h4>📊 Detalles del Video</h4>
+                        <div class="video-details-box" id="mergedVideoDetails"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pestaña: Loop de Video -->
+<div class="tab-content" id="loop-video" data-tab="loop-video">
+    <div class="card">
+        <div class="card-header">
+            <h2>🔄 Loop de Video</h2>
+            <p>Repite un video hasta alcanzar la duración deseada</p>
+        </div>
+        <div class="card-body">
+            <form id="loopVideoForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Seleccionar Video:</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="loopVideoFile" name="video" accept="video/*" class="file-input" required>
+                        <label for="loopVideoFile" class="file-upload-label">
+                            <span class="upload-icon">🎬</span>
+                            <span class="upload-text">Seleccionar Video</span>
+                        </label>
+                        <div class="file-info" id="loopVideoFileInfo" style="display: none;">
+                            <span class="file-name"></span>
+                            <span class="file-size"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Duración Objetivo:</label>
+                    <div class="duration-inputs">
+                        <input type="number" id="targetMinutes" name="target_minutes" min="0" max="59" value="1" placeholder="MM" maxlength="2">
+                        <span class="duration-separator">:</span>
+                        <input type="number" id="targetSeconds" name="target_seconds" min="0" max="59" value="00" placeholder="SS" maxlength="2">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="loopQuality">Calidad:</label>
+                        <select id="loopQuality" name="loop_quality">
+                            <option value="high">Alta (1080p)</option>
+                            <option value="medium" selected>Media (720p)</option>
+                            <option value="low">Baja (480p)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="loopTransition">Transición:</label>
+                        <select id="loopTransition" name="loop_transition">
+                            <option value="none">Sin Transición</option>
+                            <option value="fade">Fade</option>
+                            <option value="crossfade">Crossfade</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loopFormat">Formato de Salida:</label>
+                    <select id="loopFormat" name="loop_format">
+                        <option value="mp4" selected>MP4</option>
+                        <option value="avi">AVI</option>
+                        <option value="mov">MOV</option>
+                    </select>
+                </div>
+
+                <!-- Loop Preview -->
+                <div class="loop-preview" id="loopPreview" style="display: none;">
+                    <h4>👁️ Vista Previa del Loop</h4>
+                    <div class="preview-info">
+                        <div class="preview-item">
+                            <span class="preview-label">Duración Original:</span>
+                            <span class="preview-value" id="originalDuration">-</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Duración Objetivo:</span>
+                            <span class="preview-value" id="targetDurationDisplay">-</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Loops Necesarios:</span>
+                            <span class="preview-value" id="loopsNeeded">-</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Duración Final:</span>
+                            <span class="preview-value" id="finalDuration">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">🔄</span>
+                        Crear Loop
+                    </button>
+                    <button type="button" onclick="clearLoopForm()" class="btn btn-secondary">
+                        <span class="btn-icon">🗑️</span>
+                        Limpiar
+                    </button>
+                </div>
+            </form>
+
+            <!-- Progress Section -->
+            <div id="loopProgressSection" class="progress-section" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="loopProgressFill"></div>
+                </div>
+                <div class="progress-text" id="loopProgressText">Creando loop...</div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="loopResultsSection" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h3>🔄 Loop Creado</h3>
+                    <button onclick="downloadLoopVideo()" class="btn btn-success">
+                        <span class="btn-icon">💾</span>
+                        Descargar Video
+                    </button>
+                </div>
+                <div class="results-content">
+                    <div class="video-section">
+                        <h4>🎥 Reproducir Video</h4>
+                        <div class="video-player" id="loopVideoPlayer"></div>
+                    </div>
+                    <div class="video-details-section">
+                        <h4>📊 Detalles del Loop</h4>
+                        <div class="video-details-box" id="loopVideoDetails"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pestaña: Configuración -->
+<div class="tab-content" id="configuracion" data-tab="configuracion">
+    <div class="card">
+        <div class="card-header">
+            <h2>⚙️ Configuración del Sistema</h2>
+            <p>Configura los parámetros del servidor y la aplicación</p>
+        </div>
+        <div class="card-body">
+            <form id="configForm">
+                <div class="form-section">
+                    <h3>🌐 Configuración del Servidor</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="configHost">Host:</label>
+                            <input type="text" id="configHost" name="host" placeholder="127.0.0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="configPort">Puerto:</label>
+                            <input type="number" id="configPort" name="port" placeholder="5050" min="1000" max="65535">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="configDebug">Modo Debug:</label>
+                            <select id="configDebug" name="debug">
+                                <option value="true">Activado</option>
+                                <option value="false">Desactivado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="configAutoReload">Auto-reload:</label>
+                            <select id="configAutoReload" name="auto_reload">
+                                <option value="true">Activado</option>
+                                <option value="false">Desactivado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🌍 Configuración de Idiomas</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="configSourceLang">Idioma Fuente por Defecto:</label>
+                            <select id="configSourceLang" name="default_source_lang">
+                                <option value="en-US">Inglés (EE.UU.)</option>
+                                <option value="en-GB">Inglés (Reino Unido)</option>
+                                <option value="es-ES">Español (España)</option>
+                                <option value="es-MX">Español (México)</option>
+                                <option value="fr-FR">Francés</option>
+                                <option value="de-DE">Alemán</option>
+                                <option value="it-IT">Italiano</option>
+                                <option value="pt-BR">Portugués (Brasil)</option>
+                                <option value="pt-PT">Portugués (Portugal)</option>
+                                <option value="ja-JP">Japonés</option>
+                                <option value="ko-KR">Coreano</option>
+                                <option value="zh-CN">Chino (Simplificado)</option>
+                                <option value="zh-TW">Chino (Tradicional)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="configTargetLang">Idioma Destino por Defecto:</label>
+                            <select id="configTargetLang" name="default_target_lang">
+                                <option value="es">Español</option>
+                                <option value="en">Inglés</option>
+                                <option value="fr">Francés</option>
+                                <option value="de">Alemán</option>
+                                <option value="it">Italiano</option>
+                                <option value="pt">Portugués</option>
+                                <option value="ja">Japonés</option>
+                                <option value="ko">Coreano</option>
+                                <option value="zh">Chino</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🎨 Configuración de Tema</h3>
+                    <div class="form-group">
+                        <label for="configTheme">Tema:</label>
+                        <select id="configTheme" name="theme">
+                            <option value="auto">Automático (Sistema)</option>
+                            <option value="light">Claro</option>
+                            <option value="dark">Oscuro</option>
+                        </select>
+                    </div>
+                    <div class="theme-controls">
+                        <button type="button" onclick="resetThemeDetection()" class="btn btn-secondary">
+                            <span class="btn-icon">🔄</span>
+                            Restaurar Detección Automática
+                        </button>
+                        <button type="button" onclick="forceAutoTheme()" class="btn btn-secondary">
+                            <span class="btn-icon">🌐</span>
+                            Forzar Detección Automática
+                        </button>
+                        <button type="button" onclick="clearAllThemeSettings()" class="btn btn-danger">
+                            <span class="btn-icon">🗑️</span>
+                            Limpiar Todo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🔊 Configuración de Audio</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="configAudioSampleRate">Frecuencia de Muestreo:</label>
+                            <select id="configAudioSampleRate" name="audio_sample_rate">
+                                <option value="8000">8 kHz</option>
+                                <option value="16000" selected>16 kHz</option>
+                                <option value="22050">22.05 kHz</option>
+                                <option value="44100">44.1 kHz</option>
+                                <option value="48000">48 kHz</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="configAudioQuality">Calidad de Audio:</label>
+                            <select id="configAudioQuality" name="audio_quality">
+                                <option value="optimized" selected>Optimizada</option>
+                                <option value="high">Alta</option>
+                                <option value="medium">Media</option>
+                                <option value="low">Baja</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="configAudioChannels">Canales de Audio:</label>
+                            <select id="configAudioChannels" name="audio_channels">
+                                <option value="mono" selected>Mono</option>
+                                <option value="stereo">Estéreo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="configAudioOptimization">Optimización de Audio:</label>
+                            <select id="configAudioOptimization" name="audio_optimization">
+                                <option value="dialogue" selected>Diálogo</option>
+                                <option value="music">Música</option>
+                                <option value="mixed">Mixto</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">💾</span>
+                        Guardar Configuración
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pestaña: Gestión de Pestañas -->
 <div class="tab-content" id="gestion-pestanas" data-tab="gestion-pestanas">
     <div class="card">
         <div class="card-header">
             <h2>📋 Gestión de Pestañas</h2>
             <p>Crear y administrar pestañas personalizadas</p>
         </div>
-        
         <div class="card-body">
-            <div class="form-actions">
-                <button type="button" class="btn btn-primary" onclick="addNewTab()">
-                    <span class="btn-icon">➕</span>
-                    Crear Nueva Pestaña
-                </button>
-                <button type="button" class="btn btn-info" onclick="showTabTemplates()">
-                    <span class="btn-icon">📄</span>
-                    Ver Templates
-                </button>
-            </div>
-            
-            <div class="tabs-info">
-                <h3>Pestañas Actuales:</h3>
-                <div id="currentTabsList" class="tabs-list">
-                    <!-- Se llenará dinámicamente -->
+            <div class="tabs-management">
+                <div class="tabs-controls">
+                    <button onclick="addNewTab()" class="btn btn-primary">
+                        <span class="btn-icon">➕</span>
+                        Nueva Pestaña
+                    </button>
+                    <button onclick="showTabTemplates()" class="btn btn-secondary">
+                        <span class="btn-icon">📋</span>
+                        Ver Plantillas
+                    </button>
+                </div>
+                
+                <div class="tabs-list-section">
+                    <h3>📋 Pestañas Actuales</h3>
+                    <div id="tabsList" class="tabs-list">
+                        <p>No hay pestañas dinámicas</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<div id="notification" class="notification"></div>
 {% endblock %}

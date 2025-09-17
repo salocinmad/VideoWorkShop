@@ -1,0 +1,13 @@
+{
+  "port": 5050,
+  "host": "127.0.0.1",
+  "debug": true,
+  "auto_reload": true,
+  "default_source_lang": "en-US",
+  "default_target_lang": "es",
+  "theme": "auto",
+  "audio_sample_rate": 16000,
+  "audio_quality": "optimized",
+  "audio_channels": "mono",
+  "audio_optimization": "dialogue"
+}
