@@ -36,7 +36,7 @@ VideoWorkshop es una aplicación web completa que permite procesar videos de man
 ### Requisitos Previos
 - **Python 3.8+**
 - **Google Cloud Platform** (cuenta activa)
-- **Windows 10/11** (para scripts .bat)
+- **Sistema Operativo**: Windows 10/11, Linux, macOS
 
 ### 1. Clonar el Repositorio
 ```bash
@@ -47,8 +47,12 @@ cd VideoWorkShop
 ### 2. Crear Entorno Virtual
 ```bash
 python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
+
+# Windows
+venv\Scripts\activate
+
+# Linux/macOS
+source venv/bin/activate
 ```
 
 ### 3. Instalar Dependencias
@@ -85,14 +89,38 @@ DEBUG=true
 SECRET_KEY=tu-clave-secreta-muy-segura
 ```
 
+## 🌍 Compatibilidad Multiplataforma
+
+VideoWorkshop está diseñado para funcionar en múltiples sistemas operativos:
+
+### ✅ Sistemas Soportados
+- **Windows 10/11**: Con scripts automáticos (.bat) para facilitar el uso
+- **Linux**: Ubuntu 18.04+, Debian, CentOS, RHEL
+- **macOS**: 10.14+ (Mojave o superior)
+
+### 🔧 Diferencias por Plataforma
+- **Windows**: Incluye scripts `.bat` para automatizar tareas comunes
+- **Linux/macOS**: Uso directo de comandos Python estándar
+- **Todas las plataformas**: Misma funcionalidad completa de la aplicación
+
 ## 🎯 Uso
 
 ### Iniciar la Aplicación
-```bash
-# Opción 1: Script automático (Windows)
-iniciar_app.bat
 
-# Opción 2: Comando directo
+#### Windows (con scripts automáticos)
+```bash
+# Script automático que activa venv e inicia la app
+iniciar_app.bat
+```
+
+#### Linux/macOS/Windows (comando directo)
+```bash
+# Activar entorno virtual
+source venv/bin/activate  # Linux/macOS
+# o
+venv\Scripts\activate     # Windows
+
+# Iniciar aplicación
 python app.py
 ```
 
@@ -148,7 +176,10 @@ El sistema incluye voces en múltiples idiomas:
 
 ## 🛠️ Scripts de Utilidad
 
-### backup.bat
+### Scripts de Windows (.bat)
+Estos scripts facilitan el uso en Windows:
+
+#### backup.bat
 Crea un checkpoint completo de la aplicación:
 ```bash
 backup.bat
@@ -156,7 +187,7 @@ backup.bat
 # Se crea en carpeta Backups/
 ```
 
-### restore.bat
+#### restore.bat
 Restaura un checkpoint anterior:
 ```bash
 restore.bat
@@ -164,10 +195,23 @@ restore.bat
 # Restaura archivos y configuración
 ```
 
-### instalar_tts.bat
+#### instalar_tts.bat
 Instala dependencias de Text-to-Speech:
 ```bash
 instalar_tts.bat
+```
+
+### Uso en Linux/macOS
+En sistemas Unix, puedes usar los comandos equivalentes:
+```bash
+# Crear backup manual
+cp -r . Backups/manual_backup_$(date +%Y%m%d_%H%M%S)
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Iniciar aplicación
+python app.py
 ```
 
 ## 📁 Estructura del Proyecto
@@ -189,18 +233,23 @@ instalar_tts.bat
 
 ## 📝 Requisitos del Sistema
 
-- **Sistema Operativo**: Windows 10/11, Linux, macOS
+- **Sistema Operativo**: Windows 10/11, Linux (Ubuntu 18.04+), macOS 10.14+
 - **Python**: 3.8 o superior
 - **Memoria RAM**: 4GB mínimo, 8GB recomendado
 - **Espacio en disco**: 2GB para instalación
 - **Conexión a Internet**: Requerida para APIs de Google Cloud
+- **FFmpeg**: Requerido para procesamiento de video (se instala automáticamente con MoviePy)
 
 ## 🚨 Solución de Problemas
 
 ### Error de Credenciales Google
 ```bash
-# Verificar archivo de credenciales
+# Windows
+echo %GOOGLE_APPLICATION_CREDENTIALS%
+
+# Linux/macOS
 echo $GOOGLE_APPLICATION_CREDENTIALS
+
 # Debe apuntar al archivo JSON correcto
 ```
 
@@ -208,12 +257,28 @@ echo $GOOGLE_APPLICATION_CREDENTIALS
 ```bash
 # Reinstalar dependencias
 pip install -r requirements.txt --force-reinstall
+
+# Si hay problemas con MoviePy en Linux
+pip install imageio-ffmpeg
 ```
 
 ### Error de Puerto en Uso
 ```bash
 # Cambiar puerto en config.json
 "port": 5051
+```
+
+### Error de FFmpeg (Linux/macOS)
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install ffmpeg
+
+# macOS con Homebrew
+brew install ffmpeg
+
+# CentOS/RHEL
+sudo yum install ffmpeg
 ```
 
 ## 📄 Licencia
