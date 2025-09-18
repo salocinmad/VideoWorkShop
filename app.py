@@ -47,39 +47,44 @@ DEFAULT_CONFIG = {
 # Cargar configuración desde archivo
 def load_config():
     try:
-        # Cargar configuración base
+        # Cargar configuración base desde config.json (solo configuraciones específicas de la app)
+        config = {}
         if os.path.exists('config.json'):
             with open('config.json', 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 logger.info("✅ Configuración cargada desde config.json")
         else:
             logger.info("📝 Creando configuración por defecto")
-            config = DEFAULT_CONFIG.copy()
+            config = {"app_name": "VideoWorkshop", "app_description": "Taller de video con subtitulación, audio y edición"}
             save_config(config)
         
-        # Asegurar que todas las claves de DEFAULT_CONFIG estén presentes
-        for key, default_value in DEFAULT_CONFIG.items():
-            if key not in config:
-                config[key] = default_value
-        
-        # Sobrescribir con variables de entorno si existen
-        config['host'] = os.getenv('HOST', config.get('host', '127.0.0.1'))
-        config['port'] = int(os.getenv('PORT', config.get('port', 5050)))
-        config['debug'] = os.getenv('DEBUG', str(config.get('debug', True))).lower() == 'true'
-        config['auto_reload'] = os.getenv('AUTO_RELOAD', str(config.get('auto_reload', True))).lower() == 'true'
+        # Cargar TODAS las configuraciones desde variables de entorno (prioridad alta)
+        config['host'] = os.getenv('HOST', '127.0.0.1')
+        config['port'] = int(os.getenv('PORT', '5050'))
+        config['debug'] = os.getenv('DEBUG', 'true').lower() == 'true'
+        config['auto_reload'] = os.getenv('AUTO_RELOAD', 'true').lower() == 'true'
         
         # Configuración de idiomas
-        config['default_source_lang'] = os.getenv('DEFAULT_SOURCE_LANG', config.get('default_source_lang', 'en-US'))
-        config['default_target_lang'] = os.getenv('DEFAULT_TARGET_LANG', config.get('default_target_lang', 'es'))
+        config['default_source_lang'] = os.getenv('DEFAULT_SOURCE_LANG', 'en-US')
+        config['default_target_lang'] = os.getenv('DEFAULT_TARGET_LANG', 'es')
         
         # Configuración de tema
-        config['theme'] = os.getenv('THEME', config.get('theme', 'auto'))
+        config['theme'] = os.getenv('THEME', 'auto')
         
         # Configuración de audio
-        config['audio_sample_rate'] = int(os.getenv('AUDIO_SAMPLE_RATE', config.get('audio_sample_rate', 16000)))
-        config['audio_quality'] = os.getenv('AUDIO_QUALITY', config.get('audio_quality', 'optimized'))
-        config['audio_channels'] = os.getenv('AUDIO_CHANNELS', config.get('audio_channels', 'mono'))
-        config['audio_optimization'] = os.getenv('AUDIO_OPTIMIZATION', config.get('audio_optimization', 'dialogue'))
+        config['audio_sample_rate'] = int(os.getenv('AUDIO_SAMPLE_RATE', '16000'))
+        config['audio_quality'] = os.getenv('AUDIO_QUALITY', 'optimized')
+        config['audio_channels'] = os.getenv('AUDIO_CHANNELS', 'mono')
+        config['audio_optimization'] = os.getenv('AUDIO_OPTIMIZATION', 'dialogue')
+        
+        # Configuraciones adicionales de la aplicación
+        config['default_model'] = os.getenv('DEFAULT_MODEL', 'latest_short')
+        config['default_voice_language'] = os.getenv('DEFAULT_VOICE_LANGUAGE', 'es-ES')
+        config['default_voice_name'] = os.getenv('DEFAULT_VOICE_NAME', 'es-ES-Standard-A')
+        config['default_audio_format'] = os.getenv('DEFAULT_AUDIO_FORMAT', 'mp3')
+        config['default_speaking_rate'] = float(os.getenv('DEFAULT_SPEAKING_RATE', '1.0'))
+        config['default_pitch'] = float(os.getenv('DEFAULT_PITCH', '0.0'))
+        config['default_volume_gain_db'] = float(os.getenv('DEFAULT_VOLUME_GAIN_DB', '0.0'))
         
         logger.info(f"🌐 Servidor configurado para: {config['host']}:{config['port']}")
         return config
