@@ -299,8 +299,6 @@ Las contribuciones son bienvenidas. Por favor:
 
 Para soporte técnico o preguntas:
 - **Issues**: [GitHub Issues](https://github.com/salocinmad/VideoWorkShop/issues)
-- **Email**: soporte@videoworkshop.com
-- **Documentación**: [Wiki del proyecto](https://github.com/salocinmad/VideoWorkShop/wiki)
 
 ## 🎉 Agradecimientos
 
