@@ -6,6 +6,7 @@ import json
 import logging
 import tempfile
 import time
+import subprocess
 from flask import Flask, request, jsonify, render_template
 from google.cloud import speech
 from google.cloud import translate_v2 as translate
@@ -13,14 +14,49 @@ from google.cloud import storage
 from google.cloud import texttospeech
 from google.cloud import texttospeech_v1beta1
 import moviepy.editor as mp
+from moviepy.config import change_settings
 from pydub import AudioSegment
 
-# Configurar logging
+# Configurar logging primero
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Configurar MoviePy para usar GPU (NVIDIA)
+def setup_gpu_acceleration():
+    """Configurar aceleración por GPU para procesamiento de video"""
+    try:
+        # Verificar si FFMPEG con soporte NVIDIA está disponible
+        result = subprocess.run(['ffmpeg', '-encoders'], capture_output=True, text=True)
+        if 'h264_nvenc' in result.stdout:
+            # Configurar FFMPEG para usar GPU NVIDIA
+            change_settings({"FFMPEG_BINARY": "ffmpeg"})
+            
+            # Detectar GPUs disponibles
+            nvidia_result = subprocess.run(['nvidia-smi', '--query-gpu=index,name', '--format=csv,noheader,nounits'], 
+                                         capture_output=True, text=True)
+            if nvidia_result.returncode == 0:
+                gpus = nvidia_result.stdout.strip().split('\n')
+                logger.info(f"🎮 GPUs NVIDIA detectadas: {len(gpus)}")
+                for gpu in gpus:
+                    if gpu.strip():
+                        logger.info(f"   - {gpu.strip()}")
+                logger.info("🚀 Aceleración GPU habilitada - Selecciona GPU manualmente")
+            else:
+                logger.info("🎮 GPU NVIDIA detectada - Aceleración habilitada")
+            
+            return True
+        else:
+            logger.warning("⚠️ FFMPEG sin soporte NVIDIA - Usando CPU")
+            return False
+    except Exception as e:
+        logger.warning(f"⚠️ No se pudo configurar GPU: {e}")
+        return False
+
+# Configurar GPU al iniciar
+GPU_AVAILABLE = setup_gpu_acceleration()
 
 # Configuración por defecto (solo para fallback si no existe config.json)
 DEFAULT_CONFIG = {
@@ -47,44 +83,39 @@ DEFAULT_CONFIG = {
 # Cargar configuración desde archivo
 def load_config():
     try:
-        # Cargar configuración base desde config.json (solo configuraciones específicas de la app)
-        config = {}
+        # Cargar configuración base
         if os.path.exists('config.json'):
             with open('config.json', 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 logger.info("✅ Configuración cargada desde config.json")
         else:
             logger.info("📝 Creando configuración por defecto")
-            config = {"app_name": "VideoWorkshop", "app_description": "Taller de video con subtitulación, audio y edición"}
+            config = DEFAULT_CONFIG.copy()
             save_config(config)
         
-        # Cargar TODAS las configuraciones desde variables de entorno (prioridad alta)
-        config['host'] = os.getenv('HOST', '127.0.0.1')
-        config['port'] = int(os.getenv('PORT', '5050'))
-        config['debug'] = os.getenv('DEBUG', 'true').lower() == 'true'
-        config['auto_reload'] = os.getenv('AUTO_RELOAD', 'true').lower() == 'true'
+        # Asegurar que todas las claves de DEFAULT_CONFIG estén presentes
+        for key, default_value in DEFAULT_CONFIG.items():
+            if key not in config:
+                config[key] = default_value
+        
+        # Sobrescribir con variables de entorno si existen
+        config['host'] = os.getenv('HOST', config.get('host', '127.0.0.1'))
+        config['port'] = int(os.getenv('PORT', config.get('port', 5050)))
+        config['debug'] = os.getenv('DEBUG', str(config.get('debug', True))).lower() == 'true'
+        config['auto_reload'] = os.getenv('AUTO_RELOAD', str(config.get('auto_reload', True))).lower() == 'true'
         
         # Configuración de idiomas
-        config['default_source_lang'] = os.getenv('DEFAULT_SOURCE_LANG', 'en-US')
-        config['default_target_lang'] = os.getenv('DEFAULT_TARGET_LANG', 'es')
+        config['default_source_lang'] = os.getenv('DEFAULT_SOURCE_LANG', config.get('default_source_lang', 'en-US'))
+        config['default_target_lang'] = os.getenv('DEFAULT_TARGET_LANG', config.get('default_target_lang', 'es'))
         
         # Configuración de tema
-        config['theme'] = os.getenv('THEME', 'auto')
+        config['theme'] = os.getenv('THEME', config.get('theme', 'auto'))
         
         # Configuración de audio
-        config['audio_sample_rate'] = int(os.getenv('AUDIO_SAMPLE_RATE', '16000'))
-        config['audio_quality'] = os.getenv('AUDIO_QUALITY', 'optimized')
-        config['audio_channels'] = os.getenv('AUDIO_CHANNELS', 'mono')
-        config['audio_optimization'] = os.getenv('AUDIO_OPTIMIZATION', 'dialogue')
-        
-        # Configuraciones adicionales de la aplicación
-        config['default_model'] = os.getenv('DEFAULT_MODEL', 'latest_short')
-        config['default_voice_language'] = os.getenv('DEFAULT_VOICE_LANGUAGE', 'es-ES')
-        config['default_voice_name'] = os.getenv('DEFAULT_VOICE_NAME', 'es-ES-Standard-A')
-        config['default_audio_format'] = os.getenv('DEFAULT_AUDIO_FORMAT', 'mp3')
-        config['default_speaking_rate'] = float(os.getenv('DEFAULT_SPEAKING_RATE', '1.0'))
-        config['default_pitch'] = float(os.getenv('DEFAULT_PITCH', '0.0'))
-        config['default_volume_gain_db'] = float(os.getenv('DEFAULT_VOLUME_GAIN_DB', '0.0'))
+        config['audio_sample_rate'] = int(os.getenv('AUDIO_SAMPLE_RATE', config.get('audio_sample_rate', 16000)))
+        config['audio_quality'] = os.getenv('AUDIO_QUALITY', config.get('audio_quality', 'optimized'))
+        config['audio_channels'] = os.getenv('AUDIO_CHANNELS', config.get('audio_channels', 'mono'))
+        config['audio_optimization'] = os.getenv('AUDIO_OPTIMIZATION', config.get('audio_optimization', 'dialogue'))
         
         logger.info(f"🌐 Servidor configurado para: {config['host']}:{config['port']}")
         return config
@@ -878,11 +909,12 @@ def merge_videos():
         output_quality = request.form.get('output_quality', 'medium')
         output_format = request.form.get('output_format', 'mp4')
         transition_type = request.form.get('transition_type', 'none')
+        processing_mode = request.form.get('processing_mode', 'auto')
         
-        logger.info(f'⚙️ Configuración: {output_quality}, {output_format}, {transition_type}')
+        logger.info(f'⚙️ Configuración: {output_quality}, {output_format}, {transition_type}, {processing_mode}')
         
         # Procesar videos
-        result = process_video_merge(videos, output_quality, output_format, transition_type)
+        result = process_video_merge(videos, output_quality, output_format, transition_type, processing_mode)
         
         return result
         
@@ -910,16 +942,17 @@ def loop_video():
         loop_quality = request.form.get('loop_quality', 'medium')
         loop_transition = request.form.get('loop_transition', 'none')
         loop_format = request.form.get('loop_format', 'mp4')
+        processing_mode = request.form.get('loop_processing_mode', 'auto')
         
         # Calcular duración objetivo en segundos
         target_duration = target_minutes * 60 + target_seconds
         
         logger.info(f'📹 Video: {video_file.filename}')
         logger.info(f'⏱️ Duración objetivo: {target_minutes}:{target_seconds:02d} ({target_duration}s)')
-        logger.info(f'⚙️ Configuración: {loop_quality}, {loop_format}, {loop_transition}')
+        logger.info(f'⚙️ Configuración: {loop_quality}, {loop_format}, {loop_transition}, {processing_mode}')
         
         # Procesar loop de video
-        result = process_video_loop(video_file, target_duration, loop_quality, loop_format, loop_transition)
+        result = process_video_loop(video_file, target_duration, loop_quality, loop_format, loop_transition, processing_mode)
         
         return result
         
@@ -927,7 +960,7 @@ def loop_video():
         logger.error(f"❌ Error creando loop de video: {e}")
         return jsonify({'error': str(e)}), 500
 
-def process_video_merge(videos, output_quality, output_format, transition_type):
+def process_video_merge(videos, output_quality, output_format, transition_type, processing_mode='auto'):
     """Procesar unión de videos usando moviepy"""
     try:
         from moviepy.editor import VideoFileClip, concatenate_videoclips
@@ -958,6 +991,8 @@ def process_video_merge(videos, output_quality, output_format, transition_type):
             
             # Configurar calidad de salida
             quality_settings = {
+                '4k': {'height': 2160, 'bitrate': '15000k'},
+                '1440p': {'height': 1440, 'bitrate': '8000k'},
                 'high': {'height': 1080, 'bitrate': '5000k'},
                 'medium': {'height': 720, 'bitrate': '2500k'},
                 'low': {'height': 480, 'bitrate': '1000k'}
@@ -994,20 +1029,60 @@ def process_video_merge(videos, output_quality, output_format, transition_type):
             output_filename = f"video_unido_{timestamp}.{output_format}"
             temp_output_path = os.path.join(tempfile.gettempdir(), output_filename)
             
-            # Configurar parámetros de escritura
-            write_params = {
-                'codec': 'libx264',
-                'audio_codec': 'aac',
-                'bitrate': quality['bitrate']
-            }
+            # Configurar parámetros de escritura según modo de procesamiento
+            use_gpu = False
+            if processing_mode == 'gpu' and GPU_AVAILABLE:
+                use_gpu = True
+            elif processing_mode == 'cpu':
+                use_gpu = False
+            elif processing_mode == 'auto' and GPU_AVAILABLE:
+                use_gpu = True
+            
+            if use_gpu:
+                # Usar H.264 para mejor compatibilidad con navegadores
+                codec = 'h264_nvenc'
+                # Parámetros más conservadores para evitar errores de nivel
+                write_params = {
+                    'codec': codec,  # Usar encoder NVIDIA H.264
+                    'audio_codec': 'aac',
+                    'bitrate': quality['bitrate'],
+                    'preset': 'fast'  # Preset rápido para GPU
+                }
+                logger.info(f"🚀 Usando GPU (RTX 3060/4070) con {codec.upper()}")
+            else:
+                write_params = {
+                    'codec': 'libx264',
+                    'audio_codec': 'aac',
+                    'bitrate': quality['bitrate']
+                }
+                logger.info("💻 Usando CPU para procesar videos")
             
             logger.info(f'💾 Guardando video final: {output_filename}')
-            final_video.write_videofile(
-                temp_output_path,
-                **write_params,
-                verbose=False,
-                logger=None
-            )
+            try:
+                final_video.write_videofile(
+                    temp_output_path,
+                    **write_params,
+                    verbose=False,
+                    logger=None
+                )
+            except Exception as gpu_error:
+                if use_gpu:
+                    logger.warning(f"⚠️ Error con GPU, cambiando a CPU: {gpu_error}")
+                    # Fallback a CPU si GPU falla
+                    write_params = {
+                        'codec': 'libx264',
+                        'audio_codec': 'aac',
+                        'bitrate': quality['bitrate']
+                    }
+                    logger.info("💻 Usando CPU como fallback")
+                    final_video.write_videofile(
+                        temp_output_path,
+                        **write_params,
+                        verbose=False,
+                        logger=None
+                    )
+                else:
+                    raise gpu_error
             
             # Obtener información del video final
             final_duration = final_video.duration
@@ -1066,7 +1141,7 @@ def process_video_merge(videos, output_quality, output_format, transition_type):
         logger.error(f"❌ Error procesando unión de videos: {e}")
         return jsonify({'error': str(e)}), 500
 
-def process_video_loop(video_file, target_duration, loop_quality, loop_format, loop_transition):
+def process_video_loop(video_file, target_duration, loop_quality, loop_format, loop_transition, processing_mode='auto'):
     """Procesar loop de video usando moviepy"""
     try:
         from moviepy.editor import VideoFileClip, concatenate_videoclips
@@ -1098,6 +1173,8 @@ def process_video_loop(video_file, target_duration, loop_quality, loop_format, l
             
             # Configurar calidad de salida
             quality_settings = {
+                '4k': {'height': 2160, 'bitrate': '15000k'},
+                '1440p': {'height': 1440, 'bitrate': '8000k'},
                 'high': {'height': 1080, 'bitrate': '5000k'},
                 'medium': {'height': 720, 'bitrate': '2500k'},
                 'low': {'height': 480, 'bitrate': '1000k'}
@@ -1141,12 +1218,33 @@ def process_video_loop(video_file, target_duration, loop_quality, loop_format, l
             output_filename = f"video_loop_{timestamp}.{loop_format}"
             temp_output_path = os.path.join(tempfile.gettempdir(), output_filename)
             
-            # Configurar parámetros de escritura
-            write_params = {
-                'codec': 'libx264',
-                'audio_codec': 'aac',
-                'bitrate': quality['bitrate']
-            }
+            # Configurar parámetros de escritura según modo de procesamiento
+            use_gpu = False
+            if processing_mode == 'gpu' and GPU_AVAILABLE:
+                use_gpu = True
+            elif processing_mode == 'cpu':
+                use_gpu = False
+            elif processing_mode == 'auto' and GPU_AVAILABLE:
+                use_gpu = True
+            
+            if use_gpu:
+                # Usar H.264 para mejor compatibilidad con navegadores
+                codec = 'h264_nvenc'
+                # Parámetros más conservadores para evitar errores de nivel
+                write_params = {
+                    'codec': codec,  # Usar encoder NVIDIA H.264
+                    'audio_codec': 'aac',
+                    'bitrate': quality['bitrate'],
+                    'preset': 'fast'  # Preset rápido para GPU
+                }
+                logger.info(f"🚀 Usando GPU (RTX 3060/4070) con {codec.upper()}")
+            else:
+                write_params = {
+                    'codec': 'libx264',
+                    'audio_codec': 'aac',
+                    'bitrate': quality['bitrate']
+                }
+                logger.info("💻 Usando CPU para procesar videos")
             
             logger.info(f'💾 Guardando video con loop: {output_filename}')
             final_video.write_videofile(

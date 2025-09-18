@@ -1199,12 +1199,25 @@ async function processVideoMerge(event) {
     const progressSection = document.getElementById('mergeProgressSection');
     const progressFill = document.getElementById('mergeProgressFill');
     const progressText = document.getElementById('mergeProgressText');
+    const processingInfo = document.getElementById('mergeProcessingInfo');
+    const processingMode = document.getElementById('mergeProcessingModeText');
+    const processingTime = document.getElementById('mergeProcessingTimeText');
     
     progressSection.style.display = 'block';
     progressFill.style.width = '0%';
     progressText.textContent = 'Procesando videos...';
+    processingInfo.style.display = 'none';
+    
+    // Obtener modo de procesamiento seleccionado
+    const selectedMode = document.getElementById('processingMode').value;
+    const modeText = selectedMode === 'auto' ? 'Automático' : 
+                    selectedMode === 'gpu' ? 'GPU (RTX 3060/4070)' : 'CPU';
+    
+    
+    processingMode.textContent = modeText;
     
     let progressInterval;
+    const startTime = Date.now();
     
     try {
         // Simular progreso
@@ -1227,14 +1240,23 @@ async function processVideoMerge(event) {
         const result = await response.json();
         
         if (result.success) {
+            // Calcular tiempo de procesamiento
+            const endTime = Date.now();
+            const processingDuration = ((endTime - startTime) / 1000).toFixed(2);
+            
+            // Mostrar información de procesamiento
+            processingTime.textContent = `${processingDuration}s`;
+            processingInfo.style.display = 'flex';
+            
+            
             // Ocultar progreso
             setTimeout(() => {
                 progressSection.style.display = 'none';
-            }, 1000);
+            }, 3000); // Mostrar por 3 segundos para ver el tiempo
             
-            // Mostrar resultados
-            showMergeResults(result);
-            showNotification('Videos unidos exitosamente', 'success');
+            // Mostrar resultados con información de procesamiento
+            showMergeResults(result, processingDuration, modeText);
+            showNotification(`Videos unidos exitosamente en ${processingDuration}s`, 'success');
         } else {
             throw new Error(result.error || 'Error desconocido');
         }
@@ -1250,7 +1272,7 @@ async function processVideoMerge(event) {
 }
 
 // Mostrar resultados de unión de videos
-function showMergeResults(result) {
+function showMergeResults(result, processingTime = null, processingMode = null) {
     const resultsSection = document.getElementById('mergeResultsSection');
     const videoPlayer = document.getElementById('mergedVideoPlayer');
     const videoDetails = document.getElementById('mergedVideoDetails');
@@ -1268,7 +1290,7 @@ function showMergeResults(result) {
     
     // Mostrar detalles
     const details = result.video_details;
-    videoDetails.innerHTML = `
+    let detailsHTML = `
         <div class="detail-item">
             <span class="detail-label">Duración</span>
             <span class="detail-value">${details.duration}</span>
@@ -1292,9 +1314,22 @@ function showMergeResults(result) {
         <div class="detail-item">
             <span class="detail-label">Videos Unidos</span>
             <span class="detail-value">${details.videos_merged}</span>
-        </div>
-    `;
+        </div>`;
     
+    // Agregar información de procesamiento si está disponible
+    if (processingTime && processingMode) {
+        detailsHTML += `
+        <div class="detail-item">
+            <span class="detail-label">Modo de Procesamiento</span>
+            <span class="detail-value">${processingMode}</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Tiempo de Procesamiento</span>
+            <span class="detail-value">${processingTime}s</span>
+        </div>`;
+    }
+    
+    videoDetails.innerHTML = detailsHTML;
     resultsSection.style.display = 'block';
 }
 
@@ -1333,12 +1368,25 @@ async function createVideoLoop(event) {
     const progressSection = document.getElementById('loopProgressSection');
     const progressFill = document.getElementById('loopProgressFill');
     const progressText = document.getElementById('loopProgressText');
+    const processingInfo = document.getElementById('loopProcessingInfo');
+    const processingMode = document.getElementById('loopProcessingModeText');
+    const processingTime = document.getElementById('loopProcessingTimeText');
     
     progressSection.style.display = 'block';
     progressFill.style.width = '0%';
     progressText.textContent = 'Preparando video...';
+    processingInfo.style.display = 'none';
+    
+    // Obtener modo de procesamiento seleccionado
+    const selectedMode = document.getElementById('loopProcessingMode').value;
+    const modeText = selectedMode === 'auto' ? 'Automático' : 
+                    selectedMode === 'gpu' ? 'GPU (RTX 3060/4070)' : 'CPU';
+    
+    
+    processingMode.textContent = modeText;
     
     let progressInterval;
+    const startTime = Date.now();
     
     try {
         // Simular progreso
@@ -1361,14 +1409,23 @@ async function createVideoLoop(event) {
         const result = await response.json();
         
         if (result.success) {
+            // Calcular tiempo de procesamiento
+            const endTime = Date.now();
+            const processingDuration = ((endTime - startTime) / 1000).toFixed(2);
+            
+            // Mostrar información de procesamiento
+            processingTime.textContent = `${processingDuration}s`;
+            processingInfo.style.display = 'flex';
+            
+            
             // Ocultar progreso
             setTimeout(() => {
                 progressSection.style.display = 'none';
-            }, 1000);
+            }, 3000); // Mostrar por 3 segundos para ver el tiempo
             
-            // Mostrar resultados
-            showLoopResults(result);
-            showNotification('Loop de video creado exitosamente', 'success');
+            // Mostrar resultados con información de procesamiento
+            showLoopResults(result, processingDuration, modeText);
+            showNotification(`Loop de video creado exitosamente en ${processingDuration}s`, 'success');
         } else {
             throw new Error(result.error || 'Error desconocido');
         }
@@ -1384,7 +1441,7 @@ async function createVideoLoop(event) {
 }
 
 // Mostrar resultados de loop de video
-function showLoopResults(result) {
+function showLoopResults(result, processingTime = null, processingMode = null) {
     const resultsSection = document.getElementById('loopResultsSection');
     const videoPlayer = document.getElementById('loopVideoPlayer');
     const videoDetails = document.getElementById('loopVideoDetails');
@@ -1402,7 +1459,7 @@ function showLoopResults(result) {
     
     // Mostrar detalles
     const details = result.video_details;
-    videoDetails.innerHTML = `
+    let detailsHTML = `
         <div class="detail-item">
             <span class="detail-label">Duración Original</span>
             <span class="detail-value">${details.original_duration}</span>
@@ -1426,9 +1483,22 @@ function showLoopResults(result) {
         <div class="detail-item">
             <span class="detail-label">Formato</span>
             <span class="detail-value">${details.format}</span>
-        </div>
-    `;
+        </div>`;
     
+    // Agregar información de procesamiento si está disponible
+    if (processingTime && processingMode) {
+        detailsHTML += `
+        <div class="detail-item">
+            <span class="detail-label">Modo de Procesamiento</span>
+            <span class="detail-value">${processingMode}</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Tiempo de Procesamiento</span>
+            <span class="detail-value">${processingTime}s</span>
+        </div>`;
+    }
+    
+    videoDetails.innerHTML = detailsHTML;
     resultsSection.style.display = 'block';
 }
 

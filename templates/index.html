@@ -346,6 +346,8 @@
                     <div class="form-group">
                         <label for="outputQuality">Calidad de Salida:</label>
                         <select id="outputQuality" name="output_quality">
+                            <option value="4k">Ultra Alta (4K)</option>
+                            <option value="1440p">Muy Alta (1440p)</option>
                             <option value="high">Alta (1080p)</option>
                             <option value="medium" selected>Media (720p)</option>
                             <option value="low">Baja (480p)</option>
@@ -361,14 +363,26 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="transitionType">Tipo de Transición:</label>
-                    <select id="transitionType" name="transition_type">
-                        <option value="none">Sin Transición</option>
-                        <option value="fade">Fade</option>
-                        <option value="crossfade">Crossfade</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="processingMode">Modo de Procesamiento:</label>
+                        <select id="processingMode" name="processing_mode">
+                            <option value="auto" selected>Automático (GPU si disponible)</option>
+                            <option value="gpu">Forzar GPU (RTX 3060/4070)</option>
+                            <option value="cpu">Forzar CPU</option>
+                        </select>
+                        <small class="form-help">💡 GPU usa H.264 para compatibilidad con navegadores</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="transitionType">Tipo de Transición:</label>
+                        <select id="transitionType" name="transition_type">
+                            <option value="none">Sin Transición</option>
+                            <option value="fade">Fade</option>
+                            <option value="crossfade">Crossfade</option>
+                        </select>
+                    </div>
                 </div>
+
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
@@ -388,6 +402,10 @@
                     <div class="progress-fill" id="mergeProgressFill"></div>
                 </div>
                 <div class="progress-text" id="mergeProgressText">Procesando videos...</div>
+                <div class="processing-info" id="mergeProcessingInfo" style="display: none;">
+                    <div class="processing-mode">🖥️ Modo: <span id="mergeProcessingModeText"></span></div>
+                    <div class="processing-time">⏱️ Tiempo: <span id="mergeProcessingTimeText">-</span></div>
+                </div>
             </div>
 
             <!-- Results Section -->
@@ -451,6 +469,8 @@
                     <div class="form-group">
                         <label for="loopQuality">Calidad:</label>
                         <select id="loopQuality" name="loop_quality">
+                            <option value="4k">Ultra Alta (4K)</option>
+                            <option value="1440p">Muy Alta (1440p)</option>
                             <option value="high">Alta (1080p)</option>
                             <option value="medium" selected>Media (720p)</option>
                             <option value="low">Baja (480p)</option>
@@ -466,13 +486,24 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="loopFormat">Formato de Salida:</label>
-                    <select id="loopFormat" name="loop_format">
-                        <option value="mp4" selected>MP4</option>
-                        <option value="avi">AVI</option>
-                        <option value="mov">MOV</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="loopFormat">Formato de Salida:</label>
+                        <select id="loopFormat" name="loop_format">
+                            <option value="mp4" selected>MP4</option>
+                            <option value="avi">AVI</option>
+                            <option value="mov">MOV</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="loopProcessingMode">Modo de Procesamiento:</label>
+                        <select id="loopProcessingMode" name="loop_processing_mode">
+                            <option value="auto" selected>Automático (GPU si disponible)</option>
+                            <option value="gpu">Forzar GPU (RTX 3060/4070)</option>
+                            <option value="cpu">Forzar CPU</option>
+                        </select>
+                        <small class="form-help">💡 GPU usa H.264 para compatibilidad con navegadores</small>
+                    </div>
                 </div>
 
                 <!-- Loop Preview -->
@@ -516,6 +547,10 @@
                     <div class="progress-fill" id="loopProgressFill"></div>
                 </div>
                 <div class="progress-text" id="loopProgressText">Creando loop...</div>
+                <div class="processing-info" id="loopProcessingInfo" style="display: none;">
+                    <div class="processing-mode">🖥️ Modo: <span id="loopProcessingModeText"></span></div>
+                    <div class="processing-time">⏱️ Tiempo: <span id="loopProcessingTimeText">-</span></div>
+                </div>
             </div>
 
             <!-- Results Section -->
