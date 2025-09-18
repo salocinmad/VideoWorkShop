@@ -22,16 +22,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuración de la aplicación
-APP_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 5000,
-    'debug': True,
-    'auto_reload': True
-}
-
-# Configuración por defecto
+# Configuración por defecto (solo para fallback si no existe config.json)
 DEFAULT_CONFIG = {
+    'host': '127.0.0.1',
+    'port': 5050,
+    'debug': True,
+    'auto_reload': True,
     'default_source_lang': 'en-US',
     'default_target_lang': 'es',
     'default_model': 'latest_short',
@@ -41,7 +37,11 @@ DEFAULT_CONFIG = {
     'default_speaking_rate': 1.0,
     'default_pitch': 0.0,
     'default_volume_gain_db': 0.0,
-    'theme': 'auto'
+    'theme': 'auto',
+    'audio_sample_rate': 16000,
+    'audio_quality': 'optimized',
+    'audio_channels': 'mono',
+    'audio_optimization': 'dialogue'
 }
 
 # Cargar configuración desde archivo
@@ -57,9 +57,14 @@ def load_config():
             config = DEFAULT_CONFIG.copy()
             save_config(config)
         
+        # Asegurar que todas las claves de DEFAULT_CONFIG estén presentes
+        for key, default_value in DEFAULT_CONFIG.items():
+            if key not in config:
+                config[key] = default_value
+        
         # Sobrescribir con variables de entorno si existen
         config['host'] = os.getenv('HOST', config.get('host', '127.0.0.1'))
-        config['port'] = int(os.getenv('PORT', config.get('port', 5000)))
+        config['port'] = int(os.getenv('PORT', config.get('port', 5050)))
         config['debug'] = os.getenv('DEBUG', str(config.get('debug', True))).lower() == 'true'
         config['auto_reload'] = os.getenv('AUTO_RELOAD', str(config.get('auto_reload', True))).lower() == 'true'
         
@@ -94,6 +99,54 @@ def save_config(config):
 # Cargar configuración
 CONFIG = load_config()
 
+# Configurar credenciales de Google Cloud
+def setup_google_credentials():
+    """Configurar credenciales de Google Cloud"""
+    try:
+        # Verificar si existe el archivo de credenciales
+        creds_file = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        if creds_file and os.path.exists(creds_file):
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_file
+            logger.info(f"✅ Credenciales Google Cloud configuradas: {creds_file}")
+            return True
+        else:
+            # Buscar archivo de credenciales en el directorio actual
+            creds_files = [f for f in os.listdir('.') if f.endswith('.json') and 'eco-carver' in f]
+            if creds_files:
+                creds_file = creds_files[0]
+                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_file
+                logger.info(f"✅ Credenciales Google Cloud encontradas: {creds_file}")
+                return True
+            else:
+                logger.error("❌ No se encontró archivo de credenciales de Google Cloud")
+                return False
+    except Exception as e:
+        logger.error(f"❌ Error configurando credenciales: {e}")
+        return False
+
+# Cargar variables de entorno desde .env si existe
+def load_env_file():
+    """Cargar variables de entorno desde archivo .env"""
+    try:
+        if os.path.exists('.env'):
+            with open('.env', 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ[key.strip()] = value.strip()
+            logger.info("✅ Variables de entorno cargadas desde .env")
+        else:
+            logger.warning("⚠️ Archivo .env no encontrado, usando variables de entorno del sistema")
+    except Exception as e:
+        logger.error(f"❌ Error cargando archivo .env: {e}")
+
+# Cargar variables de entorno
+load_env_file()
+
+# Configurar credenciales
+setup_google_credentials()
+
 # Inicializar Flask
 app = Flask(__name__)
 
@@ -114,7 +167,10 @@ except Exception as e:
     tts_long_client = None
 
 # Configuración de Google Cloud Storage
-BUCKET_NAME = os.getenv('GOOGLE_STORAGE_BUCKET', 'subidas2')
+BUCKET_NAME = os.getenv('GOOGLE_STORAGE_BUCKET')
+if not BUCKET_NAME:
+    logger.error("❌ GOOGLE_STORAGE_BUCKET no está configurado en las variables de entorno")
+    raise ValueError("GOOGLE_STORAGE_BUCKET es requerido")
 
 def get_language_model(source_lang):
     """Determinar el modelo de idioma basado en el idioma de origen"""
@@ -614,7 +670,11 @@ def process_long_audio(text_content, voice_language, voice_name, audio_format,
         )
         
         # Crear request para Long Audio API
-        project_id = os.getenv('GOOGLE_CLOUD_PROJECT_ID', 'eco-carver-466600-u1')
+        project_id = os.getenv('GOOGLE_CLOUD_PROJECT_ID')
+        if not project_id:
+            logger.error("❌ GOOGLE_CLOUD_PROJECT_ID no está configurado en las variables de entorno")
+            raise ValueError("GOOGLE_CLOUD_PROJECT_ID es requerido")
+        
         request = texttospeech_v1beta1.SynthesizeLongAudioRequest(
             parent=f"projects/{project_id}/locations/global",
             input=synthesis_input,
@@ -1172,7 +1232,7 @@ def process_video_loop(video_file, target_duration, loop_quality, loop_format, l
 if __name__ == '__main__':
     # Usar configuración cargada desde config.json
     host = CONFIG.get('host', '127.0.0.1')
-    port = CONFIG.get('port', 5000)
+    port = CONFIG.get('port', 5050)
     debug = CONFIG.get('debug', True)
     
     print(f"🚀 Iniciando aplicación en http://{host}:{port}")
