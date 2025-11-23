@@ -11,7 +11,7 @@ services:
     volumes:
       - ./config.json:/app/config.json:ro
       - ./presets.json:/app/presets.json
-      - ./creds:/app/creds:ro
+      - ./creds:/app/creds
       - ./templates:/app/templates:ro
       - ./static/js:/app/static/js:ro
       - ./static/css:/app/static/css:ro
