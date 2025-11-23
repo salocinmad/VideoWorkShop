@@ -261,8 +261,8 @@ def upload_audio_to_gcs_public(audio_path, blob_name):
             blob.upload_from_file(audio_file, content_type=content_type)
         
         # Generar URL firmada válida por 1 hora
-        from datetime import datetime, timedelta
-        expiration = datetime.utcnow() + timedelta(hours=1)
+        from datetime import datetime, timedelta, timezone
+        expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         
         audio_url = blob.generate_signed_url(
             version="v4",
@@ -656,12 +656,23 @@ def process_standard_audio(text_content, voice_language, voice_name, audio_forma
             effects_profile_id=[effects_profile_id] if effects_profile_id else None
         )
         
-        # Sintetizar audio
-        response = tts_client.synthesize_speech(
-            input=synthesis_input,
-            voice=voice,
-            audio_config=audio_config
-        )
+        try:
+            response = tts_client.synthesize_speech(
+                input=synthesis_input,
+                voice=voice,
+                audio_config=audio_config
+            )
+        except Exception as e:
+            if 'does not exist' in str(e) or 'not found' in str(e):
+                fallback_name = get_default_voice_name(voice_language)
+                voice = texttospeech.VoiceSelectionParams(language_code=voice_language, name=fallback_name)
+                response = tts_client.synthesize_speech(
+                    input=synthesis_input,
+                    voice=voice,
+                    audio_config=audio_config
+                )
+            else:
+                raise
         
         # Guardar archivo temporal
         timestamp = int(time.time())
@@ -842,8 +853,15 @@ def process_chunked_audio(text_content, voice_language, voice_name, audio_format
                     audio_config=audio_config
                 )
             except Exception as e:
-                if ssml_chunk is not None and 'Invalid SSML' in str(e):
-                    # Fallback solo: SSML mínimo uniforme
+                if 'does not exist' in str(e) or 'not found' in str(e):
+                    fallback_name = get_default_voice_name(voice_language)
+                    voice = texttospeech.VoiceSelectionParams(language_code=voice_language, name=fallback_name)
+                    response = tts_client.synthesize_speech(
+                        input=synthesis_input,
+                        voice=voice,
+                        audio_config=audio_config
+                    )
+                elif ssml_chunk is not None and 'Invalid SSML' in str(e):
                     minimal_ssml = apply_minimal_voice_style(chunk, voice_style, total_length)
                     try:
                         synthesis_input = texttospeech.SynthesisInput(ssml=minimal_ssml) if minimal_ssml else texttospeech.SynthesisInput(text=chunk)
@@ -853,7 +871,6 @@ def process_chunked_audio(text_content, voice_language, voice_name, audio_format
                             audio_config=audio_config
                         )
                     except Exception:
-                        # Último recurso: texto plano
                         synthesis_input = texttospeech.SynthesisInput(text=chunk)
                         response = tts_client.synthesize_speech(
                             input=synthesis_input,
@@ -1027,6 +1044,28 @@ def get_default_voice_name(language_code):
         'zh-CN': 'cmn-CN-Standard-A'
     }
     return defaults.get(language_code, CONFIG.get('default_voice_name', 'es-ES-Standard-A'))
+
+@app.route('/api/voices', methods=['GET'])
+def list_voices():
+    try:
+        language = request.args.get('language')
+        if tts_client is None:
+            raise RuntimeError('Cliente de Text-to-Speech no inicializado')
+        result = tts_client.list_voices()
+        voices = []
+        for v in result.voices:
+            item = {
+                'name': getattr(v, 'name', None),
+                'language_codes': list(getattr(v, 'language_codes', [])),
+                'ssml_gender': str(getattr(v, 'ssml_gender', '')),
+                'natural_sample_rate_hertz': int(getattr(v, 'natural_sample_rate_hertz', 0)) if getattr(v, 'natural_sample_rate_hertz', None) is not None else None
+            }
+            if not language or (language in item['language_codes']):
+                voices.append(item)
+        return jsonify({'success': True, 'voices': voices})
+    except Exception as e:
+        logger.error(f"❌ Error listando voces: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/clear-gcs', methods=['POST'])
 def clear_gcs():

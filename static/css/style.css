@@ -255,6 +255,29 @@ body {
     padding: 0.5rem;
 }
 
+.preset-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: center;
+}
+
+.form-row.preset-row {
+    display: flex;
+    justify-content: center;
+}
+.form-row.preset-row .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.form-row.preset-row .form-group label {
+    text-align: center;
+    margin-bottom: 0.5rem;
+    width: 100%;
+}
+
 .form-section {
     margin-bottom: 2rem;
     padding-bottom: 2rem;

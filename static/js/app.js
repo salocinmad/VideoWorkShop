@@ -256,6 +256,19 @@ function setupEventListeners() {
         // Inicializar opciones de voz al cargar la página
         updateVoiceOptions();
     }
+    const voiceGender = document.getElementById('voiceGender');
+    if (voiceGender) {
+        voiceGender.addEventListener('change', updateVoiceOptions);
+    }
+
+    const preset1 = document.getElementById('preset1');
+    const preset2 = document.getElementById('preset2');
+    const preset3 = document.getElementById('preset3');
+    const preset4 = document.getElementById('preset4');
+    if (preset1) preset1.addEventListener('click', () => applyPreset(1));
+    if (preset2) preset2.addEventListener('click', () => applyPreset(2));
+    if (preset3) preset3.addEventListener('click', () => applyPreset(3));
+    if (preset4) preset4.addEventListener('click', () => applyPreset(4));
     
     // Formulario de unir videos
     const mergeVideosForm = document.getElementById('mergeVideosForm');
@@ -645,25 +658,46 @@ function handleTextFileSelect(event) {
 // Actualizar opciones de voz
 function updateVoiceOptions() {
     const voiceLanguage = document.getElementById('voiceLanguage').value;
+    const selectedGender = (document.getElementById('voiceGender')?.value || 'female').toLowerCase();
     const voiceNameSelect = document.getElementById('voiceName');
     
-    // Limpiar opciones actuales
     voiceNameSelect.innerHTML = '<option value="">Seleccionar voz...</option>';
     
-    // Obtener opciones de voz
-    const voiceOptions = getVoiceOptionsForLanguage(voiceLanguage);
-    
-    // Agregar opciones
-    voiceOptions.forEach(option => {
-        const optionElement = document.createElement('option');
-        optionElement.value = option.value;
-        optionElement.textContent = option.text;
-        voiceNameSelect.appendChild(optionElement);
+    const options = getStaticVoiceOptions(voiceLanguage, selectedGender);
+    options.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option.value;
+        opt.textContent = option.text;
+        voiceNameSelect.appendChild(opt);
     });
+    if (options.length > 0) {
+        voiceNameSelect.value = options[0].value;
+    }
+}
 
-    // Seleccionar automáticamente la primera voz disponible para evitar nombre vacío
-    if (voiceOptions.length > 0) {
-        voiceNameSelect.value = voiceOptions[0].value;
+function applyPreset(id) {
+    const voiceLanguageEl = document.getElementById('voiceLanguage');
+    const voiceGenderEl = document.getElementById('voiceGender');
+    const voiceNameEl = document.getElementById('voiceName');
+    const voiceStyleEl = document.getElementById('voiceStyle');
+    const effectsEl = document.getElementById('effectsProfileId');
+    const pitchEl = document.getElementById('pitch');
+    if (id === 1) {
+        if (voiceLanguageEl) voiceLanguageEl.value = 'es-ES';
+        if (voiceGenderEl) voiceGenderEl.value = 'male';
+        updateVoiceOptions();
+        if (voiceNameEl) {
+            voiceNameEl.value = 'es-ES-Wavenet-G';
+            if (!voiceNameEl.value) {
+                const opts = getStaticVoiceOptions('es-ES', 'male');
+                if (opts.length) voiceNameEl.value = opts[0].value;
+            }
+        }
+        if (voiceStyleEl) voiceStyleEl.value = 'storytelling';
+        if (effectsEl) effectsEl.value = 'headphone-class-device';
+        if (pitchEl) pitchEl.value = (-0.5).toFixed(1);
+    } else {
+        showNotification('Preajuste no configurado todavía', 'info');
     }
 }
 
@@ -684,14 +718,7 @@ function getVoiceOptionsForLanguage(language) {
             { value: 'es-ES-Wavenet-C', text: 'Femenina WaveNet 2' },
             { value: 'es-ES-Wavenet-D', text: 'Masculino WaveNet 2' }
         ],
-        'es-MX': [
-            { value: 'es-MX-Standard-A', text: 'Femenina Normal' },
-            { value: 'es-MX-Standard-B', text: 'Masculino Normal' },
-            { value: 'es-MX-Neural2-A', text: 'Femenina Neural' },
-            { value: 'es-MX-Neural2-B', text: 'Masculino Neural' },
-            { value: 'es-MX-Wavenet-A', text: 'Femenina WaveNet' },
-            { value: 'es-MX-Wavenet-B', text: 'Masculino WaveNet' }
-        ],
+        'es-MX': [],
         'en-US': [
             { value: 'en-US-Standard-A', text: 'Female Normal' },
             { value: 'en-US-Standard-B', text: 'Male Normal' },
@@ -782,15 +809,56 @@ function getVoiceOptionsForLanguage(language) {
             { value: 'ko-KR-Wavenet-A', text: '여성 WaveNet' },
             { value: 'ko-KR-Wavenet-B', text: '남성 WaveNet' }
         ],
-        'zh-CN': [
-            { value: 'cmn-CN-Standard-A', text: '女声 普通话' },
-            { value: 'cmn-CN-Standard-B', text: '男声 普通话' },
-            { value: 'cmn-CN-Wavenet-A', text: '女声 WaveNet' },
-            { value: 'cmn-CN-Wavenet-B', text: '男声 WaveNet' }
-        ]
+        'zh-CN': []
     };
     
     return voiceOptions[language] || [];
+}
+
+function getStaticVoiceOptions(language, gender) {
+    const male = 'male', female = 'female';
+    const voices = {
+        'es-ES': {
+            female: ['es-ES-Chirp-HD-F','es-ES-Chirp-HD-O','es-ES-Chirp3-HD-Aoede','es-ES-Chirp3-HD-Autonoe','es-ES-Chirp3-HD-Callirrhoe','es-ES-Chirp3-HD-Despina','es-ES-Chirp3-HD-Erinome','es-ES-Chirp3-HD-Gacrux','es-ES-Chirp3-HD-Kore','es-ES-Chirp3-HD-Laomedeia','es-ES-Chirp3-HD-Leda','es-ES-Chirp3-HD-Pulcherrima','es-ES-Chirp3-HD-Sulafat','es-ES-Chirp3-HD-Vindemiatrix','es-ES-Chirp3-HD-Zephyr','es-ES-Neural2-A','es-ES-Neural2-E','es-ES-Neural2-H','es-ES-Standard-F','es-ES-Standard-H','es-ES-Studio-C','es-ES-Wavenet-F','es-ES-Wavenet-H'],
+            male: ['es-ES-Chirp-HD-D','es-ES-Chirp3-HD-Achird','es-ES-Chirp3-HD-Algenib','es-ES-Chirp3-HD-Algieba','es-ES-Chirp3-HD-Alnilam','es-ES-Chirp3-HD-Charon','es-ES-Chirp3-HD-Enceladus','es-ES-Chirp3-HD-Fenrir','es-ES-Chirp3-HD-Iapetus','es-ES-Chirp3-HD-Orus','es-ES-Chirp3-HD-Puck','es-ES-Chirp3-HD-Rasalgethi','es-ES-Chirp3-HD-Sadachbia','es-ES-Chirp3-HD-Sadaltager','es-ES-Chirp3-HD-Schedar','es-ES-Chirp3-HD-Umbriel','es-ES-Chirp3-HD-Zubenelgenubi','es-ES-Neural2-F','es-ES-Neural2-G','es-ES-Polyglot-1','es-ES-Standard-E','es-ES-Standard-G','es-ES-Studio-F','es-ES-Wavenet-E','es-ES-Wavenet-G']
+        },
+        'en-US': {
+            female: ['Aoede','Autonoe','Callirrhoe','Despina','Erinome','Gacrux','Kore','Laomedeia','Leda','Pulcherrima','Sulafat','Vindemiatrix','Zephyr','en-US-Chirp-HD-F','en-US-Chirp-HD-O','en-US-Chirp3-HD-Achernar','en-US-Chirp3-HD-Aoede','en-US-Chirp3-HD-Autonoe','en-US-Chirp3-HD-Callirrhoe','en-US-Chirp3-HD-Despina','en-US-Chirp3-HD-Erinome','en-US-Chirp3-HD-Gacrux','en-US-Chirp3-HD-Kore','en-US-Chirp3-HD-Laomedeia','en-US-Chirp3-HD-Leda','en-US-Chirp3-HD-Pulcherrima','en-US-Chirp3-HD-Sulafat','en-US-Chirp3-HD-Vindemiatrix','en-US-Chirp3-HD-Zephyr','en-US-Neural2-C','en-US-Neural2-E','en-US-Neural2-F','en-US-Neural2-G','en-US-Neural2-H','en-US-News-L','en-US-Standard-C','en-US-Standard-E','en-US-Standard-F','en-US-Standard-G','en-US-Standard-H','en-US-Studio-O','en-US-Wavenet-C','en-US-Wavenet-E','en-US-Wavenet-F','en-US-Wavenet-G','en-US-Wavenet-H'],
+            male: ['Achird','Algenib','Algieba','Alnilam','Charon','Enceladus','Fenrir','Iapetus','Orus','Puck','Rasalgethi','Sadachbia','Sadaltager','Schedar','Umbriel','Zubenelgenubi','en-US-Casual-K','en-US-Chirp-HD-D','en-US-Chirp3-HD-Achird','en-US-Chirp3-HD-Algenib','en-US-Chirp3-HD-Algieba','en-US-Chirp3-HD-Alnilam','en-US-Chirp3-HD-Charon','en-US-Chirp3-HD-Enceladus','en-US-Chirp3-HD-Fenrir','en-US-Chirp3-HD-Iapetus','en-US-Chirp3-HD-Orus','en-US-Chirp3-HD-Puck','en-US-Chirp3-HD-Rasalgethi','en-US-Chirp3-HD-Sadachbia','en-US-Chirp3-HD-Sadaltager','en-US-Chirp3-HD-Schedar','en-US-Chirp3-HD-Umbriel','en-US-Chirp3-HD-Zubenelgenubi','en-US-Neural2-A','en-US-Neural2-D','en-US-Neural2-I','en-US-Neural2-J','en-US-News-K','en-US-News-N','en-US-Polyglot-1','en-US-Standard-A','en-US-Standard-B','en-US-Standard-D','en-US-Standard-I','en-US-Standard-J','en-US-Studio-Q','en-US-Wavenet-A','en-US-Wavenet-B','en-US-Wavenet-D','en-US-Wavenet-I','en-US-Wavenet-J']
+        },
+        'en-GB': {
+            female: ['en-GB-Chirp-HD-F','en-GB-Chirp-HD-O','en-GB-Chirp3-HD-Aoede','en-GB-Chirp3-HD-Autonoe','en-GB-Chirp3-HD-Callirrhoe','en-GB-Chirp3-HD-Despina','en-GB-Chirp3-HD-Erinome','en-GB-Chirp3-HD-Gacrux','en-GB-Chirp3-HD-Kore','en-GB-Chirp3-HD-Laomedeia','en-GB-Chirp3-HD-Leda','en-GB-Chirp3-HD-Pulcherrima','en-GB-Chirp3-HD-Sulafat','en-GB-Chirp3-HD-Vindemiatrix','en-GB-Chirp3-HD-Zephyr','en-GB-Neural2-A','en-GB-Neural2-C','en-GB-Neural2-F','en-GB-Neural2-N','en-GB-News-G','en-GB-News-H','en-GB-News-I','en-GB-Standard-A','en-GB-Standard-C','en-GB-Standard-F','en-GB-Standard-N','en-GB-Studio-C','en-GB-Wavenet-A','en-GB-Wavenet-C','en-GB-Wavenet-F','en-GB-Wavenet-N'],
+            male: ['en-GB-Chirp-HD-D','en-GB-Chirp3-HD-Achird','en-GB-Chirp3-HD-Algenib','en-GB-Chirp3-HD-Algieba','en-GB-Chirp3-HD-Alnilam','en-GB-Chirp3-HD-Charon','en-GB-Chirp3-HD-Enceladus','en-GB-Chirp3-HD-Fenrir','en-GB-Chirp3-HD-Iapetus','en-GB-Chirp3-HD-Orus','en-GB-Chirp3-HD-Puck','en-GB-Chirp3-HD-Rasalgethi','en-GB-Chirp3-HD-Sadachbia','en-GB-Chirp3-HD-Sadaltager','en-GB-Chirp3-HD-Schedar','en-GB-Chirp3-HD-Umbriel','en-GB-Chirp3-HD-Zubenelgenubi','en-GB-Neural2-B','en-GB-Neural2-D','en-GB-Neural2-O','en-GB-News-J','en-GB-News-K','en-GB-News-L','en-GB-News-M','en-GB-Standard-B','en-GB-Standard-D','en-GB-Standard-O','en-GB-Studio-B','en-GB-Wavenet-B','en-GB-Wavenet-D','en-GB-Wavenet-O']
+        },
+        'fr-FR': {
+            female: ['fr-FR-Chirp-HD-F','fr-FR-Chirp-HD-O','fr-FR-Chirp3-HD-Aoede','fr-FR-Chirp3-HD-Autonoe','fr-FR-Chirp3-HD-Callirrhoe','fr-FR-Chirp3-HD-Despina','fr-FR-Chirp3-HD-Erinome','fr-FR-Chirp3-HD-Gacrux','fr-FR-Chirp3-HD-Kore','fr-FR-Chirp3-HD-Laomedeia','fr-FR-Chirp3-HD-Leda','fr-FR-Chirp3-HD-Pulcherrima','fr-FR-Chirp3-HD-Sulafat','fr-FR-Chirp3-HD-Vindemiatrix','fr-FR-Chirp3-HD-Zephyr','fr-FR-Neural2-F','fr-FR-Standard-F','fr-FR-Studio-A','fr-FR-Wavenet-F'],
+            male: ['fr-FR-Chirp-HD-D','fr-FR-Chirp3-HD-Achird','fr-FR-Chirp3-HD-Algenib','fr-FR-Chirp3-HD-Algieba','fr-FR-Chirp3-HD-Alnilam','fr-FR-Chirp3-HD-Charon','fr-FR-Chirp3-HD-Enceladus','fr-FR-Chirp3-HD-Fenrir','fr-FR-Chirp3-HD-Iapetus','fr-FR-Chirp3-HD-Orus','fr-FR-Chirp3-HD-Puck','fr-FR-Chirp3-HD-Rasalgethi','fr-FR-Chirp3-HD-Sadachbia','fr-FR-Chirp3-HD-Sadaltager','fr-FR-Chirp3-HD-Schedar','fr-FR-Chirp3-HD-Umbriel','fr-FR-Chirp3-HD-Zubenelgenubi','fr-FR-Neural2-G','fr-FR-Polyglot-1','fr-FR-Standard-G','fr-FR-Studio-D','fr-FR-Wavenet-G']
+        },
+        'de-DE': {
+            female: ['de-DE-Chirp-HD-F','de-DE-Chirp-HD-O','de-DE-Chirp3-HD-Aoede','de-DE-Chirp3-HD-Autonoe','de-DE-Chirp3-HD-Callirrhoe','de-DE-Chirp3-HD-Despina','de-DE-Chirp3-HD-Erinome','de-DE-Chirp3-HD-Gacrux','de-DE-Chirp3-HD-Kore','de-DE-Chirp3-HD-Laomedeia','de-DE-Chirp3-HD-Leda','de-DE-Chirp3-HD-Pulcherrima','de-DE-Chirp3-HD-Sulafat','de-DE-Chirp3-HD-Vindemiatrix','de-DE-Chirp3-HD-Zephyr','de-DE-Neural2-G','de-DE-Standard-G','de-DE-Studio-C','de-DE-Wavenet-G'],
+            male: ['de-DE-Chirp-HD-D','de-DE-Chirp3-HD-Achird','de-DE-Chirp3-HD-Algenib','de-DE-Chirp3-HD-Algieba','de-DE-Chirp3-HD-Alnilam','de-DE-Chirp3-HD-Charon','de-DE-Chirp3-HD-Enceladus','de-DE-Chirp3-HD-Fenrir','de-DE-Chirp3-HD-Iapetus','de-DE-Chirp3-HD-Orus','de-DE-Chirp3-HD-Puck','de-DE-Chirp3-HD-Rasalgethi','de-DE-Chirp3-HD-Sadachbia','de-DE-Chirp3-HD-Sadaltager','de-DE-Chirp3-HD-Schedar','de-DE-Chirp3-HD-Umbriel','de-DE-Chirp3-HD-Zubenelgenubi','de-DE-Neural2-H','de-DE-Polyglot-1','de-DE-Standard-H','de-DE-Studio-B','de-DE-Wavenet-H']
+        },
+        'it-IT': {
+            female: ['it-IT-Chirp-HD-F','it-IT-Chirp-HD-O','it-IT-Chirp3-HD-Aoede','it-IT-Chirp3-HD-Autonoe','it-IT-Chirp3-HD-Callirrhoe','it-IT-Chirp3-HD-Despina','it-IT-Chirp3-HD-Erinome','it-IT-Chirp3-HD-Gacrux','it-IT-Chirp3-HD-Kore','it-IT-Chirp3-HD-Laomedeia','it-IT-Chirp3-HD-Leda','it-IT-Chirp3-HD-Pulcherrima','it-IT-Chirp3-HD-Sulafat','it-IT-Chirp3-HD-Vindemiatrix','it-IT-Chirp3-HD-Zephyr','it-IT-Neural2-A','it-IT-Neural2-E','it-IT-Standard-E','it-IT-Wavenet-E'],
+            male: ['it-IT-Chirp-HD-D','it-IT-Chirp3-HD-Achird','it-IT-Chirp3-HD-Algenib','it-IT-Chirp3-HD-Algieba','it-IT-Chirp3-HD-Alnilam','it-IT-Chirp3-HD-Charon','it-IT-Chirp3-HD-Enceladus','it-IT-Chirp3-HD-Fenrir','it-IT-Chirp3-HD-Iapetus','it-IT-Chirp3-HD-Orus','it-IT-Chirp3-HD-Puck','it-IT-Chirp3-HD-Rasalgethi','it-IT-Chirp3-HD-Sadachbia','it-IT-Chirp3-HD-Sadaltager','it-IT-Chirp3-HD-Schedar','it-IT-Chirp3-HD-Umbriel','it-IT-Chirp3-HD-Zubenelgenubi','it-IT-Neural2-F','it-IT-Standard-F','it-IT-Wavenet-F']
+        },
+        'pt-BR': {
+            female: ['pt-BR-Chirp3-HD-Aoede','pt-BR-Chirp3-HD-Autonoe','pt-BR-Chirp3-HD-Callirrhoe','pt-BR-Chirp3-HD-Despina','pt-BR-Chirp3-HD-Erinome','pt-BR-Chirp3-HD-Gacrux','pt-BR-Chirp3-HD-Kore','pt-BR-Chirp3-HD-Laomedeia','pt-BR-Chirp3-HD-Leda','pt-BR-Chirp3-HD-Pulcherrima','pt-BR-Chirp3-HD-Sulafat','pt-BR-Chirp3-HD-Vindemiatrix','pt-BR-Chirp3-HD-Zephyr','pt-BR-Neural2-A','pt-BR-Neural2-C','pt-BR-Standard-A','pt-BR-Standard-C','pt-BR-Wavenet-A','pt-BR-Wavenet-C','pt-BR-Wavenet-D'],
+            male: ['pt-BR-Chirp3-HD-Achernar','pt-BR-Chirp3-HD-Achird','pt-BR-Chirp3-HD-Algenib','pt-BR-Chirp3-HD-Algieba','pt-BR-Chirp3-HD-Alnilam','pt-BR-Chirp3-HD-Charon','pt-BR-Chirp3-HD-Enceladus','pt-BR-Chirp3-HD-Fenrir','pt-BR-Chirp3-HD-Iapetus','pt-BR-Chirp3-HD-Orus','pt-BR-Chirp3-HD-Puck','pt-BR-Chirp3-HD-Rasalgethi','pt-BR-Chirp3-HD-Sadachbia','pt-BR-Chirp3-HD-Sadaltager','pt-BR-Chirp3-HD-Schedar','pt-BR-Chirp3-HD-Umbriel','pt-BR-Chirp3-HD-Zubenelgenubi','pt-BR-Neural2-B','pt-BR-Standard-B','pt-BR-Standard-D','pt-BR-Standard-E','pt-BR-Wavenet-B','pt-BR-Wavenet-E']
+        },
+        'ja-JP': {
+            female: ['ja-JP-Chirp3-HD-Aoede','ja-JP-Chirp3-HD-Autonoe','ja-JP-Chirp3-HD-Callirrhoe','ja-JP-Chirp3-HD-Despina','ja-JP-Chirp3-HD-Erinome','ja-JP-Chirp3-HD-Gacrux','ja-JP-Chirp3-HD-Kore','ja-JP-Chirp3-HD-Laomedeia','ja-JP-Chirp3-HD-Leda','ja-JP-Chirp3-HD-Pulcherrima','ja-JP-Chirp3-HD-Sulafat','ja-JP-Chirp3-HD-Vindemiatrix','ja-JP-Chirp3-HD-Zephyr','ja-JP-Neural2-B','ja-JP-Standard-A','ja-JP-Standard-B','ja-JP-Wavenet-A','ja-JP-Wavenet-B'],
+            male: ['ja-JP-Chirp3-HD-Achernar','ja-JP-Chirp3-HD-Achird','ja-JP-Chirp3-HD-Algenib','ja-JP-Chirp3-HD-Algieba','ja-JP-Chirp3-HD-Alnilam','ja-JP-Chirp3-HD-Charon','ja-JP-Chirp3-HD-Enceladus','ja-JP-Chirp3-HD-Fenrir','ja-JP-Chirp3-HD-Iapetus','ja-JP-Chirp3-HD-Orus','ja-JP-Chirp3-HD-Puck','ja-JP-Chirp3-HD-Rasalgethi','ja-JP-Chirp3-HD-Sadachbia','ja-JP-Chirp3-HD-Sadaltager','ja-JP-Chirp3-HD-Schedar','ja-JP-Chirp3-HD-Umbriel','ja-JP-Chirp3-HD-Zubenelgenubi','ja-JP-Neural2-C','ja-JP-Neural2-D','ja-JP-Standard-C','ja-JP-Standard-D','ja-JP-Wavenet-C','ja-JP-Wavenet-D']
+        },
+        'ko-KR': {
+            female: ['ko-KR-Chirp3-HD-Aoede','ko-KR-Chirp3-HD-Autonoe','ko-KR-Chirp3-HD-Callirrhoe','ko-KR-Chirp3-HD-Despina','ko-KR-Chirp3-HD-Erinome','ko-KR-Chirp3-HD-Gacrux','ko-KR-Chirp3-HD-Kore','ko-KR-Chirp3-HD-Laomedeia','ko-KR-Chirp3-HD-Leda','ko-KR-Chirp3-HD-Pulcherrima','ko-KR-Chirp3-HD-Sulafat','ko-KR-Chirp3-HD-Vindemiatrix','ko-KR-Chirp3-HD-Zephyr','ko-KR-Neural2-A','ko-KR-Neural2-B','ko-KR-Standard-A','ko-KR-Standard-B','ko-KR-Wavenet-A','ko-KR-Wavenet-B'],
+            male: ['ko-KR-Chirp3-HD-Achernar','ko-KR-Chirp3-HD-Achird','ko-KR-Chirp3-HD-Algenib','ko-KR-Chirp3-HD-Algieba','ko-KR-Chirp3-HD-Alnilam','ko-KR-Chirp3-HD-Charon','ko-KR-Chirp3-HD-Enceladus','ko-KR-Chirp3-HD-Fenrir','ko-KR-Chirp3-HD-Iapetus','ko-KR-Chirp3-HD-Orus','ko-KR-Chirp3-HD-Puck','ko-KR-Chirp3-HD-Rasalgethi','ko-KR-Chirp3-HD-Sadachbia','ko-KR-Chirp3-HD-Sadaltager','ko-KR-Chirp3-HD-Schedar','ko-KR-Chirp3-HD-Umbriel','ko-KR-Chirp3-HD-Zubenelgenubi','ko-KR-Neural2-C','ko-KR-Standard-C','ko-KR-Standard-D','ko-KR-Wavenet-C','ko-KR-Wavenet-D']
+        }
+    };
+    const byLang = voices[language];
+    if (!byLang) return [];
+    const list = (gender === female ? byLang.female : byLang.male) || [];
+    return list.map(n => ({ value: n, text: n }));
 }
 
 // Funciones de tema
@@ -1685,3 +1753,32 @@ window.processVideoMerge = processVideoMerge;
 window.createVideoLoop = createVideoLoop;
 window.clearGcsBucket = clearGcsBucket;
 window.viewGcsBucket = viewGcsBucket;
+// Cargar voces dinámicamente desde el backend
+async function fetchVoiceOptionsForLanguage(language) {
+    try {
+        // Ajuste de códigos: chino mandarín y posibles variantes
+        const lang = language === 'zh-CN' ? 'cmn-CN' : language;
+        const res = await fetch(`/api/voices?language=${encodeURIComponent(lang)}`);
+        const data = await res.json();
+        if (!data.success) return [];
+        let voices = (data.voices || []).filter(v => (v.language_codes || []).includes(lang));
+        // Fallback para idiomas sin voces reportadas (ej. es-MX): usar es-ES
+        if (voices.length === 0 && language === 'es-MX') {
+            const resEs = await fetch('/api/voices?language=es-ES');
+            const dataEs = await resEs.json();
+            if (dataEs.success) {
+                voices = (dataEs.voices || []).filter(v => (v.language_codes || []).includes('es-ES'));
+            }
+        }
+        return voices.map(v => ({ value: v.name, text: v.name, gender: normalizeGender(v.ssml_gender) }));
+    } catch (e) {
+        return [];
+    }
+}
+
+function normalizeGender(g) {
+    const s = String(g || '').toLowerCase();
+    if (s.includes('female')) return 'female';
+    if (s.includes('male')) return 'male';
+    return '';
+}

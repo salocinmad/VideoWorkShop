@@ -2,7 +2,7 @@
 
 {% block content %}
 <!-- Pestaña: Subtitular Video -->
-<div class="tab-content active" id="subtitulos" data-tab="subtitulos">
+<div class="tab-content" id="subtitulos" data-tab="subtitulos">
     <div class="card">
         <div class="card-header">
             <h2>🎥 Subtitular Video</h2>
@@ -146,7 +146,7 @@
 </div>
 
 <!-- Pestaña: Texto a Audio -->
-<div class="tab-content" id="texto-audio" data-tab="texto-audio">
+<div class="tab-content active" id="texto-audio" data-tab="texto-audio">
     <div class="card">
         <div class="card-header">
             <h2>🔊 Texto a Audio</h2>
@@ -169,12 +169,23 @@
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row preset-row">
+                    <div class="form-group">
+                        <label>Preajustes:</label>
+                        <div class="preset-buttons">
+                            <button type="button" id="preset1" class="btn btn-info">Masculino 1</button>
+                            <button type="button" id="preset2" class="btn btn-secondary">Preajuste 2</button>
+                            <button type="button" id="preset3" class="btn btn-secondary">Preajuste 3</button>
+                            <button type="button" id="preset4" class="btn btn-secondary">Preajuste 4</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row controls-inline">
                     <div class="form-group">
                         <label for="voiceLanguage">Idioma de la Voz:</label>
                         <select id="voiceLanguage" name="voice_language">
                             <option value="es-ES">Español (España)</option>
-                            <option value="es-MX">Español (México)</option>
                             <option value="en-US">Inglés (EE.UU.)</option>
                             <option value="en-GB">Inglés (Reino Unido)</option>
                             <option value="fr-FR">Francés</option>
@@ -183,7 +194,13 @@
                             <option value="pt-BR">Portugués (Brasil)</option>
                             <option value="ja-JP">Japonés</option>
                             <option value="ko-KR">Coreano</option>
-                            <option value="zh-CN">Chino (Simplificado)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="voiceGender">Género de la Voz:</label>
+                        <select id="voiceGender" name="voice_gender">
+                            <option value="female" selected>Femenino</option>
+                            <option value="male">Masculino</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -194,7 +211,7 @@
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row controls-inline">
                     <div class="form-group">
                         <label for="audioFormat">Formato de Audio:</label>
                         <select id="audioFormat" name="audio_format">
@@ -217,6 +234,18 @@
                             <option value="advertising">Publicitario</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="effectsProfileId">Perfil de Audio:</label>
+                        <select id="effectsProfileId" name="effects_profile_id">
+                            <option value="">Ninguno</option>
+                            <option value="headphone-class-device">Auriculares</option>
+                            <option value="small-bluetooth-speaker-class-device">Altavoz pequeño Bluetooth</option>
+                            <option value="telephony-class-application">Telefonía</option>
+                            <option value="wearable-class-device">Wearable</option>
+                            <option value="large-home-entertainment-class-device">Entretenimiento en casa</option>
+                            <option value="car-class-device">Coche</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-row controls-inline">
@@ -224,7 +253,7 @@
                         <label for="speakingRate">Velocidad de Habla:</label>
                         <div class="numeric-input">
                             <button type="button" id="speakingRateDecrement" class="btn btn-secondary">−</button>
-                            <input type="number" id="speakingRate" name="speaking_rate" min="0.25" max="2.0" step="0.1" value="1.0" class="number-field">
+                            <input type="number" id="speakingRate" name="speaking_rate" min="0.25" max="2.0" step="any" value="1.0" class="number-field">
                             <button type="button" id="speakingRateIncrement" class="btn btn-secondary">+</button>
                         </div>
                     </div>
@@ -246,20 +275,7 @@
                     </div>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="effectsProfileId">Perfil de Audio:</label>
-                        <select id="effectsProfileId" name="effects_profile_id">
-                            <option value="">Ninguno</option>
-                            <option value="headphone-class-device">Auriculares</option>
-                            <option value="small-bluetooth-speaker-class-device">Altavoz pequeño Bluetooth</option>
-                            <option value="telephony-class-application">Telefonía</option>
-                            <option value="wearable-class-device">Wearable</option>
-                            <option value="large-home-entertainment-class-device">Entretenimiento en casa</option>
-                            <option value="car-class-device">Coche</option>
-                        </select>
-                    </div>
-                </div>
+                
 
                 <button type="submit" class="btn btn-primary">
                     <span class="btn-icon">🎵</span>
