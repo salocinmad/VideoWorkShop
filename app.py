@@ -380,7 +380,8 @@ def upload_credentials():
         dest = os.path.join(creds_dir, safe)
         f.save(dest)
         set_env_keys({'GOOGLE_APPLICATION_CREDENTIALS': dest})
-        return jsonify({'success': True, 'credentials_path': dest})
+        status = reinitialize_google_clients()
+        return jsonify({'success': True, 'credentials_path': dest, 'status': status})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -393,7 +394,8 @@ def update_env():
             if k in data:
                 allowed[k] = str(data[k])
         set_env_keys(allowed)
-        return jsonify({'success': True})
+        status = reinitialize_google_clients()
+        return jsonify({'success': True, 'status': status})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -412,6 +414,53 @@ def set_env_keys(kv):
         lines.append(f"{k}={v}")
     with open(env_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines) + '\n')
+
+storage_client = None
+tts_client = None
+speech_client = None
+translate_client = None
+
+def reinitialize_google_clients():
+    global storage_client, tts_client, speech_client, translate_client
+    creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    bucket_name = os.getenv('GOOGLE_STORAGE_BUCKET')
+    result = {'credentials_path': creds_path, 'bucket': bucket_name, 'storage': False, 'tts': False, 'speech': False, 'translate': False}
+    try:
+        if creds_path and os.path.exists(creds_path):
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
+            try:
+                from google.cloud import storage as gcs_storage
+                storage_client = gcs_storage.Client()
+                result['storage'] = True
+            except Exception:
+                storage_client = None
+            try:
+                from google.cloud import texttospeech as g_tts
+                tts_client = g_tts.TextToSpeechClient()
+                result['tts'] = True
+            except Exception:
+                tts_client = None
+            try:
+                from google.cloud import speech as g_speech
+                speech_client = g_speech.SpeechClient()
+                result['speech'] = True
+            except Exception:
+                speech_client = None
+            try:
+                from google.cloud import translate_v2 as g_translate
+                translate_client = g_translate.Client()
+                result['translate'] = True
+            except Exception:
+                translate_client = None
+        return result
+    except Exception as e:
+        return {**result, 'error': str(e)}
+
+@app.route('/api/google/reload', methods=['POST'])
+def api_google_reload():
+    status = reinitialize_google_clients()
+    ok = (status.get('storage') or status.get('tts') or status.get('speech') or status.get('translate'))
+    return jsonify({'success': bool(ok), 'status': status})
 
 @app.route('/api/process', methods=['POST'])
 def process_video():

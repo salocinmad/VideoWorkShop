@@ -434,6 +434,7 @@ async function uploadGoogleCredentials() {
             resultBox.textContent = `Credenciales guardadas en ${data.credentials_path}`;
             resultSection.style.display = 'block';
             showNotification('Credenciales subidas', 'success');
+            await reloadGoogleClients();
         } else {
             showNotification('Error subiendo credenciales', 'error');
         }
@@ -451,11 +452,26 @@ async function updateEnvFromUI() {
         const data = await res.json();
         if (data.success) {
             showNotification('Variables .env actualizadas', 'success');
+            await reloadGoogleClients();
         } else {
             showNotification('Error actualizando .env', 'error');
         }
     } catch {
         showNotification('Error actualizando .env', 'error');
+    }
+}
+
+async function reloadGoogleClients() {
+    try {
+        const res = await fetch('/api/google/reload', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            showNotification('Clientes de Google recargados', 'success');
+        } else {
+            showNotification('No se pudo recargar clientes', 'error');
+        }
+    } catch {
+        showNotification('Error recargando clientes', 'error');
     }
 }
 

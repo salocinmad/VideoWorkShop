@@ -38,6 +38,40 @@ VideoWorkshop es una aplicación web completa que permite procesar videos de man
 
 ## 🚀 Instalación
 
+### Despliegue con Docker
+- Requisitos: Docker y Docker Compose (o Portainer Stacks)
+- Archivos:
+  - `Dockerfile` (con ffmpeg y Python 3.12)
+  - `docker-compose.yml` (puerto 5050 y volúmenes)
+  - `.dockerignore` y `.gitattributes`
+
+#### Configuración de volúmenes
+- `./config.json:/app/config.json` (lectura/escritura)
+- `./presets.json:/app/presets.json` (lectura/escritura)
+- `./creds:/app/creds` (lectura/escritura, almacena JSON de credenciales)
+- `./templates:/app/templates:ro` y `./static/js:/app/static/js:ro` y `./static/css:/app/static/css:ro`
+- `./static/videos:/app/static/videos` (salidas locales)
+
+#### Puertos y variables
+- Puerto publicado: `5050:5050`
+- `HOST=0.0.0.0`, `PORT=5050`, `DEBUG=false`
+- `GOOGLE_APPLICATION_CREDENTIALS=/app/creds/service-account.json` (se gestiona desde la UI)
+
+#### Comandos
+```bash
+docker compose build --no-cache
+docker compose up -d
+docker compose ps     # debe mostrar 0.0.0.0:5050->5050/tcp
+```
+
+Accede: `http://<IP_DEL_SERVIDOR>:5050/` (no uses la IP interna del contenedor).
+
+### Credenciales y .env desde la UI
+- Pestaña “Configuración” → Subir JSON de credenciales → se guarda en `/app/creds` y se actualiza `.env`.
+- Introduce el nombre del bucket y pulsa “Actualizar .env”.
+- La app recarga clientes de Google sin reiniciar.
+- Nota: por seguridad, las credenciales NO se versionan en Git; se montan por volumen.
+
 ### Requisitos Previos
 - **Python 3.8+**
 - **Google Cloud Platform** (cuenta activa)
@@ -232,6 +266,31 @@ Crea el entorno `venv`, instala dependencias y ejecuta la instalación de TTS:
 instalar_app.bat
 ```
 
+## 🐳 docker-compose.yml (resumen)
+```yaml
+services:
+  videoworkshop:
+    build: .
+    ports:
+      - "5050:5050"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5050
+      - DEBUG=false
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/creds/service-account.json
+    volumes:
+      - ./config.json:/app/config.json
+      - ./presets.json:/app/presets.json
+      - ./creds:/app/creds
+      - ./templates:/app/templates:ro
+      - ./static/js:/app/static/js:ro
+      - ./static/css:/app/static/css:ro
+      - ./static/videos:/app/static/videos
+    restart: unless-stopped
+```
+
+## 🔌 Endpoints REST
+
 ### Uso en Linux/macOS
 En sistemas Unix, puedes usar los comandos equivalentes:
 ```bash
@@ -278,6 +337,7 @@ VideoWorkShop/
 - `POST /api/text-to-audio` convierte texto a audio; soporta SSML, estilos y perfiles.
   - Form-data: `text_file`, `voice_language`, `voice_gender`, `voice_name`, `voice_style`, `effects_profile_id`, `speaking_rate`, `pitch`, `volume_gain_db`, `audio_format`
 - `GET /api/voices?language=<code>` lista voces disponibles del proyecto por idioma (opcional; UI usa listas estáticas validadas).
+- `POST /api/google/reload` recarga clientes de Google en caliente tras actualizar credenciales/bucket.
 ### Ejemplos
 Guardar preajuste (PowerShell):
 ```powershell
