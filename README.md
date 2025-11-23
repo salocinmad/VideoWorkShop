@@ -14,10 +14,14 @@ VideoWorkshop es una aplicación web completa que permite procesar videos de man
 
 ### 🔊 Conversión de Texto a Audio
 - **Síntesis de voz avanzada** con Google Text-to-Speech
-- **Múltiples voces disponibles** (Standard, Neural2, WaveNet)
-- **Soporte para textos largos** sin límite de caracteres
-- **Formatos de audio** MP3, WAV, FLAC
-- **Control de velocidad, tono y volumen**
+- **Múltiples voces disponibles** (Standard, Neural2, WaveNet, Studio, Chirp3-HD)
+- **Filtro por género** y selección por idioma con listas estáticas validadas
+- **Estilos de voz SSML**: Conversacional, Narrativo, Noticias, Presentador, Storytelling, Entusiasta, Sereno, Publicitario
+- **Perfiles de audio**: Auriculares, Bluetooth pequeño, Telefonía, Wearable, Hogar, Coche
+- **Soporte para textos largos** con procesamiento por chunks y SSML consistente
+- **Fallback inteligente**: Long Audio → chunks; voz inexistente → voz válida por defecto
+- **Formatos de audio** MP3, WAV, OGG
+- **Control fino** de velocidad, tono y volumen con paso 0.1
 
 ### 🎬 Edición de Videos
 - **Unión de hasta 4 videos** con transiciones suaves
@@ -30,6 +34,7 @@ VideoWorkshop es una aplicación web completa que permite procesar videos de man
 - **Temas claro y oscuro** con detección automática
 - **Interfaz responsive** que se adapta a cualquier pantalla
 - **Notificaciones en tiempo real** del progreso
+- **Preajustes guardables** para aplicar configuraciones de voz/audio en un clic
 
 ## 🚀 Instalación
 
@@ -58,6 +63,10 @@ source venv/bin/activate
 ### 3. Instalar Dependencias
 ```bash
 pip install -r requirements.txt
+```
+#### Instalación automática (Windows)
+```bat
+instalar_app.bat
 ```
 
 ### 4. Configurar Google Cloud
@@ -141,6 +150,12 @@ Abre tu navegador y ve a: `http://127.0.0.1:5050`
 3. **Genera audio** con síntesis de voz avanzada
 4. **Reproduce y descarga** el resultado
 
+#### Preajustes
+- Botones de preajustes visibles sobre Idioma/Género/Voz.
+- “Guardar Preajuste” abre panel para elegir slot 1–4 y editar nombre; guarda en `presets.json`.
+- Al iniciar, se aplica automáticamente el Preajuste 1 por defecto.
+- Los preajustes contienen: `voice_language`, `voice_gender`, `voice_name`, `voice_style`, `effects_profile_id`, `pitch`, `speaking_rate`, `volume_gain_db`, `audio_format`.
+
 ### 🎬 Unir Videos
 1. **Selecciona hasta 4 videos** MP4
 2. **Elige transición** (fade, crossfade, sin transición)
@@ -170,14 +185,24 @@ Abre tu navegador y ve a: `http://127.0.0.1:5050`
 
 ### Personalización de Voces
 El sistema incluye voces en múltiples idiomas:
-- **Español**: Femenina, Masculina (Standard, Neural2, WaveNet)
-- **Inglés**: Varias voces con diferentes acentos
-- **Francés, Alemán, Italiano, Portugués**: Voces nativas
+- **Español**: Femenina, Masculina (Standard, Neural2, WaveNet, Studio, Chirp3-HD)
+- **Inglés**: Varias voces con diferentes acentos (incluye News, Studio y Chirp3-HD)
+- **Francés, Alemán, Italiano, Portugués, Japonés, Coreano**: Voces nativas
+### Estilos de Voz (SSML)
+- Conversacional, Narrativo, Noticias, Presentador, Storytelling, Entusiasta, Sereno, Publicitario
+### Perfiles de Audio
+- Auriculares, Altavoz pequeño Bluetooth, Telefonía, Wearable, Hogar, Coche
 
 ## 🛠️ Scripts de Utilidad
 
 ### Scripts de Windows (.bat)
 Estos scripts facilitan el uso en Windows:
+
+#### iniciar_app.bat
+Inicia la aplicación con el entorno virtual activado:
+```bash
+iniciar_app.bat
+```
 
 #### backup.bat
 Crea un checkpoint completo de la aplicación:
@@ -201,6 +226,12 @@ Instala dependencias de Text-to-Speech:
 instalar_tts.bat
 ```
 
+#### instalar_app.bat
+Crea el entorno `venv`, instala dependencias y ejecuta la instalación de TTS:
+```bash
+instalar_app.bat
+```
+
 ### Uso en Linux/macOS
 En sistemas Unix, puedes usar los comandos equivalentes:
 ```bash
@@ -217,8 +248,54 @@ python app.py
 ## 📁 Estructura del Proyecto
 
 ```
+VideoWorkShop/
+├── app.py                      # Backend Flask y endpoints
+├── config.json                 # Configuración del servidor
+├── presets.json                # Preajustes guardados (slots 1–4)
+├── requirements.txt            # Dependencias
+├── templates/
+│   ├── base.html               # Layout y barra de pestañas
+│   └── index.html              # Contenido de todas las pestañas
+├── static/
+│   ├── css/
+│   │   └── style.css           # Estilos, filas en línea, centrado y modal de preajustes
+│   ├── js/
+│   │   └── app.js              # Lógica UI, TTS, presets, filtros de voces
+│   └── videos/                 # Salidas locales (loops/merge)
+├── tests/
+│   ├── long_text.txt           # Texto de prueba largo
+│   └── long_text_big.txt       # Texto de prueba muy largo
+├── .env                        # Variables de entorno (no subir)
+├── LICENSE
+└── README.md
+```
 
+## 🔌 Endpoints REST
 
+- `GET /api/presets` devuelve preajustes guardados `{ presets: {1..4} }`.
+- `POST /api/presets/save` guarda un preajuste en `presets.json`.
+  - Body JSON: `{ slot, name, data }`
+- `POST /api/text-to-audio` convierte texto a audio; soporta SSML, estilos y perfiles.
+  - Form-data: `text_file`, `voice_language`, `voice_gender`, `voice_name`, `voice_style`, `effects_profile_id`, `speaking_rate`, `pitch`, `volume_gain_db`, `audio_format`
+- `GET /api/voices?language=<code>` lista voces disponibles del proyecto por idioma (opcional; UI usa listas estáticas validadas).
+### Ejemplos
+Guardar preajuste (PowerShell):
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5050/api/presets/save -ContentType 'application/json' -Body (@{
+  slot='2'; name='Femenino 1'; data=@{
+    voice_language='es-ES'; voice_gender='female'; voice_name='es-ES-Chirp-HD-F';
+    voice_style='storytelling'; effects_profile_id='headphone-class-device';
+    pitch=-0.5; speaking_rate=1.2; volume_gain_db=0.0; audio_format='mp3'
+  }
+} | ConvertTo-Json)
+```
+Texto a audio (curl):
+```bash
+curl -s -S -F "text_file=@tests/long_text.txt" \
+     -F "voice_language=es-ES" -F "voice_gender=female" -F "voice_name=es-ES-Chirp-HD-F" \
+     -F "voice_style=storytelling" -F "effects_profile_id=headphone-class-device" \
+     -F "speaking_rate=1.2" -F "pitch=-0.5" -F "volume_gain_db=0.0" -F "audio_format=mp3" \
+     http://127.0.0.1:5050/api/text-to-audio
 ```
 
 ## 🔧 Tecnologías Utilizadas
@@ -311,3 +388,25 @@ Para soporte técnico o preguntas:
 ---
 
 **VideoWorkshop** - *Donde la creatividad se encuentra con la tecnología* 🎬✨
+### 400 Invalid SSML (Neural2)
+- Asegura comillas dobles en atributos SSML.
+- Evita etiquetas no soportadas o demasiado largas por chunk.
+- La app recorta SSML o usa SSML mínimo en fallback por chunk.
+
+### Voz no existe / “does not exist”
+- Algunas voces (p. ej., ciertas `Wavenet-*`) pueden no estar habilitadas en tu proyecto.
+- La app reintenta con una voz válida por defecto del mismo idioma.
+- Revisa el selector y usa voces de la lista estática por idioma y género.
+
+### Deprecations
+- `datetime.utcnow()` → `datetime.now(timezone.utc)` para URLs firmadas.
+- `pkg_resources` (Translate v2) puede mostrar aviso deprecado; no bloquea.
+### 404 en `/api/presets/save`
+- Asegúrate de tener las rutas definidas antes de `app.run(...)` y reinicia la app.
+## 📘 FAQ
+- ¿Por qué mis voces suenan iguales?
+  - Si `voice_name` está vacío, se usa la voz por defecto. La UI autoselecciona voz y el backend aplica fallback seguro.
+- ¿Puedo usar voces Neural2 para textos largos?
+  - Sí, usando chunks con SSML seguro. Long Audio puede diferir; en muy largos, la app fuerza chunks.
+- ¿Cómo cambio el orden de pestañas?
+  - En `templates/base.html`; “Texto a Audio” es la pestaña principal.
