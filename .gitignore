@@ -48,3 +48,12 @@ Backups/
 .DS_Store 
 Thumbs.db 
 desktop.ini 
+venv/
+Backups/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+.env
+creds/
+.trae/
