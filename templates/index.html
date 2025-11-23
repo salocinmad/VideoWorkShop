@@ -769,6 +769,35 @@
                 </div>
 
                 <div class="form-section">
+                    <h3>🔐 Credenciales y Variables</h3>
+                    <div class="form-row controls-inline">
+                        <div class="form-group">
+                            <label for="credFile">Credenciales de Google (JSON):</label>
+                            <input type="file" id="credFile" accept=".json">
+                        </div>
+                        <div class="form-group">
+                            <label for="envBucket">Bucket de GCS:</label>
+                            <input type="text" id="envBucket" placeholder="nombre-del-bucket">
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div class="preset-buttons">
+                                <button type="button" id="uploadCredBtn" class="btn btn-secondary">Subir Credenciales</button>
+                                <button type="button" id="updateEnvBtn" class="btn btn-primary">Actualizar .env</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="results-section" id="credResultSection" style="display:none;">
+                        <div class="results-header">
+                            <h3>Resultado</h3>
+                        </div>
+                        <div class="results-content">
+                            <div id="credResultText" class="transcript-box"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
                     <h3>🔊 Configuración de Audio</h3>
                     <div class="form-row">
                         <div class="form-group">

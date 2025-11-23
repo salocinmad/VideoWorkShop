@@ -1,0 +1,16 @@
+services:
+  videoworkshop:
+    build: .
+    ports:
+      - "5050:5050"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5050
+      - DEBUG=false
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/creds/service-account.json
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./presets.json:/app/presets.json
+      - ./creds:/app/creds:ro
+      - ./static/videos:/app/static/videos
+    restart: unless-stopped

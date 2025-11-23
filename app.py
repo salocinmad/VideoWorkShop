@@ -330,6 +330,55 @@ def update_config():
         logger.error(f"❌ Error actualizando configuración: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/config/credentials', methods=['POST'])
+def upload_credentials():
+    try:
+        if 'cred_file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file'}), 400
+        f = request.files['cred_file']
+        name = f.filename or 'service-account.json'
+        base = os.path.basename(name)
+        safe = ''.join(c for c in base if c.isalnum() or c in ('-', '_', '.',))
+        if not safe.lower().endswith('.json'):
+            return jsonify({'success': False, 'error': 'Invalid extension'}), 400
+        creds_dir = os.path.join(os.path.dirname(__file__), 'creds')
+        os.makedirs(creds_dir, exist_ok=True)
+        dest = os.path.join(creds_dir, safe)
+        f.save(dest)
+        set_env_keys({'GOOGLE_APPLICATION_CREDENTIALS': dest})
+        return jsonify({'success': True, 'credentials_path': dest})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/config/env', methods=['POST'])
+def update_env():
+    try:
+        data = request.get_json(force=True)
+        allowed = {}
+        for k in ['GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_STORAGE_BUCKET', 'HOST', 'PORT', 'DEBUG']:
+            if k in data:
+                allowed[k] = str(data[k])
+        set_env_keys(allowed)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def set_env_keys(kv):
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    current = {}
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f.read().splitlines():
+                if '=' in line and not line.strip().startswith('#'):
+                    key, val = line.split('=', 1)
+                    current[key.strip()] = val.strip()
+    current.update(kv)
+    lines = []
+    for k, v in current.items():
+        lines.append(f"{k}={v}")
+    with open(env_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines) + '\n')
+
 @app.route('/api/process', methods=['POST'])
 def process_video():
     """Procesar video y generar subtítulos"""

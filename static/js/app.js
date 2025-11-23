@@ -275,6 +275,11 @@ function setupEventListeners() {
     if (savePresetBtn) savePresetBtn.addEventListener('click', openPresetModal);
 
     loadPresets();
+
+    const uploadCredBtn = document.getElementById('uploadCredBtn');
+    const updateEnvBtn = document.getElementById('updateEnvBtn');
+    if (uploadCredBtn) uploadCredBtn.addEventListener('click', uploadGoogleCredentials);
+    if (updateEnvBtn) updateEnvBtn.addEventListener('click', updateEnvFromUI);
     
     // Formulario de unir videos
     const mergeVideosForm = document.getElementById('mergeVideosForm');
@@ -413,6 +418,45 @@ function showNotification(message, type = 'info') {
             }
         }, 300);
     }, 3000);
+}
+
+async function uploadGoogleCredentials() {
+    const fileInput = document.getElementById('credFile');
+    const resultBox = document.getElementById('credResultText');
+    const resultSection = document.getElementById('credResultSection');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) { showNotification('Selecciona un fichero JSON', 'error'); return; }
+    const fd = new FormData();
+    fd.append('cred_file', fileInput.files[0]);
+    try {
+        const res = await fetch('/api/config/credentials', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            resultBox.textContent = `Credenciales guardadas en ${data.credentials_path}`;
+            resultSection.style.display = 'block';
+            showNotification('Credenciales subidas', 'success');
+        } else {
+            showNotification('Error subiendo credenciales', 'error');
+        }
+    } catch {
+        showNotification('Error subiendo credenciales', 'error');
+    }
+}
+
+async function updateEnvFromUI() {
+    const bucketInput = document.getElementById('envBucket');
+    let payload = {};
+    if (bucketInput && bucketInput.value) payload['GOOGLE_STORAGE_BUCKET'] = bucketInput.value.trim();
+    try {
+        const res = await fetch('/api/config/env', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (data.success) {
+            showNotification('Variables .env actualizadas', 'success');
+        } else {
+            showNotification('Error actualizando .env', 'error');
+        }
+    } catch {
+        showNotification('Error actualizando .env', 'error');
+    }
 }
 
 // Procesar video
