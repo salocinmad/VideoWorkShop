@@ -9,7 +9,7 @@ services:
       - DEBUG=false
       - GOOGLE_APPLICATION_CREDENTIALS=/app/creds/service-account.json
     volumes:
-      - ./config.json:/app/config.json:ro
+      - ./config.json:/app/config.json
       - ./presets.json:/app/presets.json
       - ./creds:/app/creds
       - ./templates:/app/templates:ro
