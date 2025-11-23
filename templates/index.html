@@ -177,6 +177,28 @@
                             <button type="button" id="preset2" class="btn btn-secondary">Preajuste 2</button>
                             <button type="button" id="preset3" class="btn btn-secondary">Preajuste 3</button>
                             <button type="button" id="preset4" class="btn btn-secondary">Preajuste 4</button>
+                            <button type="button" id="savePresetBtn" class="btn btn-primary">Guardar Preajuste</button>
+                        </div>
+                        <div id="presetModal" class="preset-modal" style="display:none;">
+                            <div class="preset-modal-content">
+                                <div class="preset-modal-row">
+                                    <label for="presetSlot">Guardar en:</label>
+                                    <select id="presetSlot">
+                                        <option value="1">Preajuste 1</option>
+                                        <option value="2">Preajuste 2</option>
+                                        <option value="3">Preajuste 3</option>
+                                        <option value="4">Preajuste 4</option>
+                                    </select>
+                                </div>
+                                <div class="preset-modal-row">
+                                    <label for="presetName">Nombre:</label>
+                                    <input type="text" id="presetName" placeholder="Nombre del preajuste" />
+                                </div>
+                                <div class="preset-modal-actions">
+                                    <button type="button" id="presetSaveConfirm" class="btn btn-success">Guardar</button>
+                                    <button type="button" id="presetSaveCancel" class="btn btn-secondary">Cancelar</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -2,6 +2,8 @@
 let currentSubtitles = null;
 let currentAudioUrl = null;
 let currentAudioFilename = null;
+let presetsCache = null;
+let presetsAppliedInitially = false;
 let currentMergedVideoUrl = null;
 let currentLoopVideoUrl = null;
 
@@ -269,6 +271,10 @@ function setupEventListeners() {
     if (preset2) preset2.addEventListener('click', () => applyPreset(2));
     if (preset3) preset3.addEventListener('click', () => applyPreset(3));
     if (preset4) preset4.addEventListener('click', () => applyPreset(4));
+    const savePresetBtn = document.getElementById('savePresetBtn');
+    if (savePresetBtn) savePresetBtn.addEventListener('click', openPresetModal);
+
+    loadPresets();
     
     // Formulario de unir videos
     const mergeVideosForm = document.getElementById('mergeVideosForm');
@@ -675,31 +681,134 @@ function updateVoiceOptions() {
     }
 }
 
+function loadPresets() {
+    fetch('/api/presets')
+        .then(res => res.json())
+        .then(data => {
+            presetsCache = data && data.presets ? data.presets : {};
+            const p1 = presetsCache && presetsCache['1'] ? presetsCache['1'] : null;
+            const p2 = presetsCache && presetsCache['2'] ? presetsCache['2'] : null;
+            const p3 = presetsCache && presetsCache['3'] ? presetsCache['3'] : null;
+            const p4 = presetsCache && presetsCache['4'] ? presetsCache['4'] : null;
+            const b1 = document.getElementById('preset1');
+            const b2 = document.getElementById('preset2');
+            const b3 = document.getElementById('preset3');
+            const b4 = document.getElementById('preset4');
+            if (p1 && b1) { b1.textContent = p1.name || 'Preajuste 1'; b1.className = 'btn btn-info'; }
+            if (p2 && b2) { b2.textContent = p2.name || 'Preajuste 2'; b2.className = 'btn btn-info'; }
+            if (p3 && b3) { b3.textContent = p3.name || 'Preajuste 3'; b3.className = 'btn btn-info'; }
+            if (p4 && b4) { b4.textContent = p4.name || 'Preajuste 4'; b4.className = 'btn btn-info'; }
+
+            if (!presetsAppliedInitially) {
+                applyPreset(1);
+                presetsAppliedInitially = true;
+            }
+        })
+        .catch(() => {});
+}
+
 function applyPreset(id) {
+    const p = presetsCache && presetsCache[String(id)] ? presetsCache[String(id)] : null;
     const voiceLanguageEl = document.getElementById('voiceLanguage');
     const voiceGenderEl = document.getElementById('voiceGender');
     const voiceNameEl = document.getElementById('voiceName');
     const voiceStyleEl = document.getElementById('voiceStyle');
     const effectsEl = document.getElementById('effectsProfileId');
     const pitchEl = document.getElementById('pitch');
+    const rateEl = document.getElementById('speakingRate');
+    const volEl = document.getElementById('volumeGainDb');
+    const formatEl = document.getElementById('audioFormat');
+    if (p) {
+        if (voiceLanguageEl && p.voice_language) voiceLanguageEl.value = p.voice_language;
+        if (voiceGenderEl && p.voice_gender) voiceGenderEl.value = p.voice_gender;
+        updateVoiceOptions();
+        if (voiceNameEl && p.voice_name) {
+            voiceNameEl.value = p.voice_name;
+            if (!voiceNameEl.value) {
+                const opts = getStaticVoiceOptions(voiceLanguageEl.value, voiceGenderEl.value);
+                if (opts.length) voiceNameEl.value = opts[0].value;
+            }
+        }
+        if (voiceStyleEl && p.voice_style) voiceStyleEl.value = p.voice_style;
+        if (effectsEl && p.effects_profile_id !== undefined) effectsEl.value = p.effects_profile_id;
+        if (pitchEl && p.pitch !== undefined) pitchEl.value = parseFloat(p.pitch).toFixed(1);
+        if (rateEl && p.speaking_rate !== undefined) rateEl.value = parseFloat(p.speaking_rate).toFixed(1);
+        if (volEl && p.volume_gain_db !== undefined) volEl.value = parseFloat(p.volume_gain_db).toFixed(1);
+        if (formatEl && p.audio_format) formatEl.value = p.audio_format;
+        showNotification('Preajuste aplicado', 'success');
+        return;
+    }
     if (id === 1) {
         if (voiceLanguageEl) voiceLanguageEl.value = 'es-ES';
         if (voiceGenderEl) voiceGenderEl.value = 'male';
         updateVoiceOptions();
-        if (voiceNameEl) {
-            voiceNameEl.value = 'es-ES-Wavenet-G';
-            if (!voiceNameEl.value) {
-                const opts = getStaticVoiceOptions('es-ES', 'male');
-                if (opts.length) voiceNameEl.value = opts[0].value;
-            }
-        }
+        if (voiceNameEl) voiceNameEl.value = 'es-ES-Wavenet-G';
         if (voiceStyleEl) voiceStyleEl.value = 'storytelling';
         if (effectsEl) effectsEl.value = 'headphone-class-device';
         if (pitchEl) pitchEl.value = (-0.5).toFixed(1);
+        showNotification('Preajuste aplicado', 'success');
     } else {
-        showNotification('Preajuste no configurado todavía', 'info');
+        return;
     }
 }
+
+function openPresetModal() {
+    const modal = document.getElementById('presetModal');
+    const slotSel = document.getElementById('presetSlot');
+    const nameInput = document.getElementById('presetName');
+    if (!modal || !slotSel || !nameInput) return;
+    const defaultSlot = '1';
+    slotSel.value = defaultSlot;
+    const existing = presetsCache && presetsCache[defaultSlot] ? presetsCache[defaultSlot].name : `Preajuste ${defaultSlot}`;
+    nameInput.value = existing;
+    modal.style.display = 'block';
+    const confirmBtn = document.getElementById('presetSaveConfirm');
+    const cancelBtn = document.getElementById('presetSaveCancel');
+    if (confirmBtn) confirmBtn.onclick = confirmPresetSave;
+    if (cancelBtn) cancelBtn.onclick = () => { modal.style.display = 'none'; };
+}
+
+function confirmPresetSave() {
+    const modal = document.getElementById('presetModal');
+    const slotSel = document.getElementById('presetSlot');
+    const nameInput = document.getElementById('presetName');
+    if (!slotSel || !nameInput) return;
+    const slot = String(slotSel.value);
+    const name = String(nameInput.value || `Preajuste ${slot}`);
+    const payload = {
+        slot: slot,
+        name: name,
+        data: {
+            voice_language: document.getElementById('voiceLanguage')?.value,
+            voice_gender: document.getElementById('voiceGender')?.value,
+            voice_name: document.getElementById('voiceName')?.value,
+            voice_style: document.getElementById('voiceStyle')?.value,
+            effects_profile_id: document.getElementById('effectsProfileId')?.value,
+            pitch: parseFloat(document.getElementById('pitch')?.value || '0'),
+            speaking_rate: parseFloat(document.getElementById('speakingRate')?.value || '1.0'),
+            volume_gain_db: parseFloat(document.getElementById('volumeGainDb')?.value || '0'),
+            audio_format: document.getElementById('audioFormat')?.value
+        }
+    };
+    fetch('/api/presets/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success) {
+                showNotification('Preajuste guardado', 'success');
+                if (modal) modal.style.display = 'none';
+                loadPresets();
+            } else {
+                showNotification('Error al guardar preajuste', 'error');
+            }
+        })
+        .catch(() => showNotification('Error al guardar preajuste', 'error'));
+}
+
+ 
 
 // Obtener opciones de voz para un idioma
 function getVoiceOptionsForLanguage(language) {

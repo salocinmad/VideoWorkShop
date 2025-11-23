@@ -1,0 +1,43 @@
+{
+  "presets": {
+    "1": {
+      "name": "Masculino 1",
+      "voice_language": "es-ES",
+      "voice_gender": "male",
+      "voice_name": "es-ES-Wavenet-G",
+      "voice_style": "storytelling",
+      "effects_profile_id": "headphone-class-device",
+      "pitch": -0.5,
+      "speaking_rate": 1.0,
+      "volume_gain_db": 0.0,
+      "audio_format": "mp3"
+    },
+    "2": {
+      "name": "Femenino 1",
+      "voice_language": "es-ES",
+      "voice_gender": "female",
+      "voice_name": "es-ES-Chirp-HD-F",
+      "voice_style": "storytelling",
+      "effects_profile_id": "headphone-class-device",
+      "pitch": -0.5,
+      "speaking_rate": 1,
+      "volume_gain_db": 0,
+      "audio_format": "mp3"
+    },
+    "3": {
+      "name": "Masculino 2",
+      "voice_language": "es-ES",
+      "voice_gender": "male",
+      "voice_name": "es-ES-Chirp-HD-D",
+      "voice_style": "storytelling",
+      "effects_profile_id": "headphone-class-device",
+      "pitch": 1.1,
+      "speaking_rate": 1,
+      "volume_gain_db": 0,
+      "audio_format": "mp3"
+    },
+    "4": {
+      "name": "Preajuste 4"
+    }
+  }
+}

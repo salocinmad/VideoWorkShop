@@ -8,7 +8,7 @@ import tempfile
 import time
 import subprocess
 import re
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_file, render_template
 from google.cloud import speech
 from google.cloud import translate_v2 as translate
 from google.cloud import storage
@@ -1595,6 +1595,61 @@ def process_video_loop(video_file, target_duration, loop_quality, loop_format, l
     except Exception as e:
         logger.error(f"❌ Error procesando loop de video: {e}")
         return jsonify({'error': str(e)}), 500
+
+PRESETS_FILE = os.path.join(os.path.dirname(__file__), 'presets.json')
+
+@app.route('/api/presets', methods=['GET'])
+def api_get_presets():
+    try:
+        if not os.path.exists(PRESETS_FILE):
+            presets = {
+                "1": {
+                    "name": "Masculino 1",
+                    "voice_language": "es-ES",
+                    "voice_gender": "male",
+                    "voice_name": "es-ES-Wavenet-G",
+                    "voice_style": "storytelling",
+                    "effects_profile_id": "headphone-class-device",
+                    "pitch": -0.5,
+                    "speaking_rate": 1.0,
+                    "volume_gain_db": 0.0,
+                    "audio_format": "mp3"
+                },
+                "2": { "name": "Preajuste 2" },
+                "3": { "name": "Preajuste 3" },
+                "4": { "name": "Preajuste 4" }
+            }
+            with open(PRESETS_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"presets": presets}, f, ensure_ascii=False, indent=2)
+        with open(PRESETS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify({"success": True, "presets": data.get("presets", {})})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "presets": {}}), 500
+
+@app.route('/api/presets/save', methods=['POST'])
+def api_save_preset():
+    try:
+        payload = request.get_json(force=True)
+        slot = str(payload.get('slot'))
+        name = payload.get('name')
+        data = payload.get('data') or {}
+        if slot not in {'1','2','3','4'}:
+            return jsonify({"success": False, "error": "slot inválido"}), 400
+        if not name:
+            return jsonify({"success": False, "error": "nombre requerido"}), 400
+        if not os.path.exists(PRESETS_FILE):
+            with open(PRESETS_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"presets": {}}, f)
+        with open(PRESETS_FILE, 'r', encoding='utf-8') as f:
+            content = json.load(f)
+        presets = content.get('presets', {})
+        presets[slot] = {"name": name, **data}
+        with open(PRESETS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({"presets": presets}, f, ensure_ascii=False, indent=2)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     # Usar configuración cargada desde config.json
