@@ -1,0 +1,17 @@
+Este es un texto de prueba muy largo.
+
+REP:
+La prosodia define el carácter de una voz; con SSML se ajusta el énfasis y la velocidad. Con pausas adecuadas, el oyente comprende mejor.
+FINREP
+
+============================================================
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+============================================================
+
+REPETIR 300 VECES:
+
+La prosodia define el carácter de una voz; con SSML se ajusta el énfasis y la velocidad. Con pausas adecuadas, el oyente comprende mejor.
+
+FIN

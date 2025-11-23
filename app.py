@@ -7,6 +7,7 @@ import logging
 import tempfile
 import time
 import subprocess
+import re
 from flask import Flask, request, jsonify, render_template
 from google.cloud import speech
 from google.cloud import translate_v2 as translate
@@ -580,15 +581,21 @@ def text_to_audio():
         if text_file.filename == '':
             return jsonify({'error': 'No se seleccionó archivo'}), 400
         
-        # Leer contenido del archivo
         text_content = text_file.read().decode('utf-8')
         text_size = len(text_content.encode('utf-8'))
+        text_length = len(text_content)
         
         logger.info(f'📄 Archivo: {text_file.filename} ({text_size} bytes)')
         
         # Obtener parámetros de voz
         voice_language = request.form.get('voice_language', CONFIG.get('default_voice_language', 'es-ES'))
         voice_name = request.form.get('voice_name', CONFIG.get('default_voice_name', 'es-ES-Standard-A'))
+        # Normalizar y aplicar fallback si está vacío
+        voice_name = (voice_name or '').strip()
+        if not voice_name:
+            voice_name = get_default_voice_name(voice_language)
+        voice_style = request.form.get('voice_style', 'none')
+        effects_profile_id = request.form.get('effects_profile_id', '')
         audio_format = request.form.get('audio_format', CONFIG.get('default_audio_format', 'mp3'))
         speaking_rate = float(request.form.get('speaking_rate', CONFIG.get('default_speaking_rate', 1.0)))
         pitch = float(request.form.get('pitch', CONFIG.get('default_pitch', 0.0)))
@@ -602,14 +609,24 @@ def text_to_audio():
             logger.info('📝 Usando API estándar (texto pequeño)')
             result = process_standard_audio(
                 text_content, voice_language, voice_name, audio_format,
-                speaking_rate, pitch, volume_gain_db, text_file.filename
+                speaking_rate, pitch, volume_gain_db, text_file.filename,
+                voice_style, effects_profile_id, text_length
             )
         else:
-            logger.info('📝 Usando Long Audio API (texto grande)')
-            result = process_long_audio(
-                text_content, voice_language, voice_name, audio_format,
-                speaking_rate, pitch, volume_gain_db, text_file.filename
-            )
+            if (voice_style or '').lower() != 'none':
+                logger.info('📝 Texto grande con estilo: usando procesamiento por chunks')
+                result = process_chunked_audio(
+                    text_content, voice_language, voice_name, audio_format,
+                    speaking_rate, pitch, volume_gain_db, text_file.filename,
+                    voice_style, effects_profile_id, text_length
+                )
+            else:
+                logger.info('📝 Usando Long Audio API (texto grande)')
+                result = process_long_audio(
+                    text_content, voice_language, voice_name, audio_format,
+                    speaking_rate, pitch, volume_gain_db, text_file.filename,
+                    voice_style, effects_profile_id, text_length
+                )
         
         return result
         
@@ -618,11 +635,13 @@ def text_to_audio():
         return jsonify({'error': str(e)}), 500
 
 def process_standard_audio(text_content, voice_language, voice_name, audio_format, 
-                          speaking_rate, pitch, volume_gain_db, filename):
+                          speaking_rate, pitch, volume_gain_db, filename,
+                          voice_style, effects_profile_id, total_length):
     """Procesar audio usando la API estándar de Text-to-Speech"""
     try:
         # Configurar síntesis
-        synthesis_input = texttospeech.SynthesisInput(text=text_content)
+        ssml_text = apply_voice_style(text_content, voice_style, total_length)
+        synthesis_input = texttospeech.SynthesisInput(ssml=ssml_text) if ssml_text else texttospeech.SynthesisInput(text=text_content)
         
         voice = texttospeech.VoiceSelectionParams(
             language_code=voice_language,
@@ -633,7 +652,8 @@ def process_standard_audio(text_content, voice_language, voice_name, audio_forma
             audio_encoding=get_audio_encoding(audio_format),
             speaking_rate=speaking_rate,
             pitch=pitch,
-            volume_gain_db=volume_gain_db
+            volume_gain_db=volume_gain_db,
+            effects_profile_id=[effects_profile_id] if effects_profile_id else None
         )
         
         # Sintetizar audio
@@ -673,11 +693,13 @@ def process_standard_audio(text_content, voice_language, voice_name, audio_forma
         # Fallback a procesamiento por chunks
         return process_chunked_audio(
             text_content, voice_language, voice_name, audio_format,
-            speaking_rate, pitch, volume_gain_db, filename
+            speaking_rate, pitch, volume_gain_db, filename,
+            voice_style, effects_profile_id, total_length
         )
 
 def process_long_audio(text_content, voice_language, voice_name, audio_format,
-                      speaking_rate, pitch, volume_gain_db, filename):
+                      speaking_rate, pitch, volume_gain_db, filename,
+                      voice_style, effects_profile_id, total_length):
     """Procesar audio usando la Long Audio API de Text-to-Speech"""
     try:
         # Subir texto a GCS
@@ -689,7 +711,8 @@ def process_long_audio(text_content, voice_language, voice_name, audio_format,
         output_gcs_uri = f"gs://{BUCKET_NAME}/audio/synthesized/{timestamp}_long_audio.wav"
         
         # Configurar síntesis con el modelo más grande
-        synthesis_input = texttospeech_v1beta1.SynthesisInput(text=text_content)
+        ssml_text = apply_voice_style(text_content, voice_style, total_length)
+        synthesis_input = texttospeech_v1beta1.SynthesisInput(ssml=ssml_text) if ssml_text else texttospeech_v1beta1.SynthesisInput(text=text_content)
         
         voice = texttospeech_v1beta1.VoiceSelectionParams(
             language_code=voice_language,
@@ -702,7 +725,7 @@ def process_long_audio(text_content, voice_language, voice_name, audio_format,
             speaking_rate=speaking_rate,
             pitch=pitch,
             volume_gain_db=volume_gain_db,
-            effects_profile_id=["telephony-class-application"]
+            effects_profile_id=[effects_profile_id] if effects_profile_id else ["telephony-class-application"]
         )
         
         # Crear request para Long Audio API
@@ -736,7 +759,8 @@ def process_long_audio(text_content, voice_language, voice_name, audio_format,
             # Fallback a procesamiento por chunks
             return process_chunked_audio(
                 text_content, voice_language, voice_name, audio_format,
-                speaking_rate, pitch, volume_gain_db, filename
+                speaking_rate, pitch, volume_gain_db, filename,
+                voice_style, effects_profile_id, total_length
             )
         
         # Obtener URL del audio generado
@@ -757,17 +781,24 @@ def process_long_audio(text_content, voice_language, voice_name, audio_format,
         # Fallback a procesamiento por chunks
         return process_chunked_audio(
             text_content, voice_language, voice_name, audio_format,
-            speaking_rate, pitch, volume_gain_db, filename
+            speaking_rate, pitch, volume_gain_db, filename,
+            voice_style, effects_profile_id, total_length
         )
 
 def process_chunked_audio(text_content, voice_language, voice_name, audio_format,
-                         speaking_rate, pitch, volume_gain_db, filename):
+                         speaking_rate, pitch, volume_gain_db, filename,
+                         voice_style, effects_profile_id, total_length):
     """Procesar audio dividiendo el texto en chunks"""
     try:
         logger.info('📝 Procesando texto por chunks...')
         
         # Dividir texto en chunks de máximo 4000 caracteres
-        chunk_size = 4000
+        base_chunk = 4000
+        if voice_style and voice_style.lower() != 'none':
+            base_chunk = 3500
+        if total_length >= 15000:
+            base_chunk = 3200
+        chunk_size = base_chunk
         chunks = [text_content[i:i+chunk_size] for i in range(0, len(text_content), chunk_size)]
         
         logger.info(f'📝 Texto dividido en {len(chunks)} chunks')
@@ -778,7 +809,17 @@ def process_chunked_audio(text_content, voice_language, voice_name, audio_format
             logger.info(f'🎤 Procesando chunk {i+1}/{len(chunks)}...')
             
             # Configurar síntesis para este chunk
-            synthesis_input = texttospeech.SynthesisInput(text=chunk)
+            ssml_chunk = apply_voice_style(chunk, voice_style, total_length)
+            # Asegurar límite de tamaño de request cuando se usa SSML
+            if ssml_chunk and len(ssml_chunk) > 4500:
+                max_len = len(chunk)
+                while ssml_chunk and len(ssml_chunk) > 4500 and max_len > 500:
+                    max_len = int(max_len * 0.9)
+                    ssml_chunk = apply_voice_style(chunk[:max_len], voice_style, total_length)
+                # Si aún excede, usar SSML mínimo para este fragmento
+                if ssml_chunk and len(ssml_chunk) > 4500:
+                    ssml_chunk = apply_minimal_voice_style(chunk[:max_len], voice_style, total_length)
+            synthesis_input = texttospeech.SynthesisInput(ssml=ssml_chunk) if ssml_chunk else texttospeech.SynthesisInput(text=chunk)
             
             voice = texttospeech.VoiceSelectionParams(
                 language_code=voice_language,
@@ -789,15 +830,38 @@ def process_chunked_audio(text_content, voice_language, voice_name, audio_format
                 audio_encoding=get_audio_encoding(audio_format),
                 speaking_rate=speaking_rate,
                 pitch=pitch,
-                volume_gain_db=volume_gain_db
+                volume_gain_db=volume_gain_db,
+                effects_profile_id=[effects_profile_id] if effects_profile_id else None
             )
             
             # Sintetizar chunk
-            response = tts_client.synthesize_speech(
-                input=synthesis_input,
-                voice=voice,
-                audio_config=audio_config
-            )
+            try:
+                response = tts_client.synthesize_speech(
+                    input=synthesis_input,
+                    voice=voice,
+                    audio_config=audio_config
+                )
+            except Exception as e:
+                if ssml_chunk is not None and 'Invalid SSML' in str(e):
+                    # Fallback solo: SSML mínimo uniforme
+                    minimal_ssml = apply_minimal_voice_style(chunk, voice_style, total_length)
+                    try:
+                        synthesis_input = texttospeech.SynthesisInput(ssml=minimal_ssml) if minimal_ssml else texttospeech.SynthesisInput(text=chunk)
+                        response = tts_client.synthesize_speech(
+                            input=synthesis_input,
+                            voice=voice,
+                            audio_config=audio_config
+                        )
+                    except Exception:
+                        # Último recurso: texto plano
+                        synthesis_input = texttospeech.SynthesisInput(text=chunk)
+                        response = tts_client.synthesize_speech(
+                            input=synthesis_input,
+                            voice=voice,
+                            audio_config=audio_config
+                        )
+                else:
+                    raise
             
             # Guardar chunk temporal
             chunk_filename = f"chunk_{i}_{int(time.time())}.{audio_format}"
@@ -813,10 +877,14 @@ def process_chunked_audio(text_content, voice_language, voice_name, audio_format
         combined_audio = AudioSegment.empty()
         
         for segment_path in audio_segments:
-            if audio_format == 'mp3':
-                segment = AudioSegment.from_mp3(segment_path)
-            else:
-                segment = AudioSegment.from_wav(segment_path)
+            try:
+                segment = AudioSegment.from_file(segment_path, format=audio_format)
+            except Exception:
+                # Fallback básico
+                if audio_format == 'mp3':
+                    segment = AudioSegment.from_mp3(segment_path)
+                else:
+                    segment = AudioSegment.from_wav(segment_path)
             combined_audio += segment
         
         # Guardar audio combinado
@@ -881,6 +949,163 @@ def get_audio_encoding(format_name):
         'flac': texttospeech.AudioEncoding.LINEAR16  # FLAC no está disponible, usar LINEAR16
     }
     return encodings.get(format_name, texttospeech.AudioEncoding.MP3)
+
+def apply_voice_style(text, style, total_length):
+    s = (style or '').lower()
+    if s in ('', 'none'):
+        return None
+    break_ms = 350
+    if total_length and total_length >= 15000:
+        if s in ('news', 'presenter'):
+            break_ms = 250
+        elif s in ('narrative', 'storytelling'):
+            break_ms = 500
+        else:
+            break_ms = 350
+    # Escapar caracteres especiales para SSML
+    def esc(x):
+        return x.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    safe = esc(text)
+    # Insertar pausas en signos de puntuación
+    t = re.sub(r"([\.\!\?])\s+", rf"\1 <break time=\"{break_ms}ms\"/> ", safe)
+    if s == 'conversational':
+        return f"<speak><prosody rate=\"medium\"><emphasis level=\"moderate\">{t}</emphasis></prosody></speak>"
+    if s == 'narrative':
+        return f"<speak><prosody rate=\"slow\"><emphasis level=\"moderate\">{t}</emphasis></prosody></speak>"
+    if s == 'news':
+        return f"<speak><prosody rate=\"fast\"><emphasis level=\"reduced\">{t}</emphasis></prosody></speak>"
+    if s == 'presenter':
+        return f"<speak><prosody rate=\"medium\"><emphasis level=\"strong\">{t}</emphasis></prosody></speak>"
+    if s == 'storytelling':
+        return f"<speak><prosody rate=\"slow\"><emphasis level=\"strong\">{t}</emphasis></prosody></speak>"
+    if s == 'enthusiastic':
+        return f"<speak><prosody rate=\"fast\"><emphasis level=\"strong\">{t}</emphasis></prosody></speak>"
+    if s == 'calm':
+        return f"<speak><prosody rate=\"medium\"><emphasis level=\"reduced\">{t}</emphasis></prosody></speak>"
+    if s == 'advertising':
+        return f"<speak><prosody rate=\"medium\"><emphasis level=\"strong\">{t}</emphasis></prosody></speak>"
+    return None
+
+def apply_minimal_voice_style(text, style, total_length):
+    s = (style or '').lower()
+    if s in ('', 'none'):
+        return None
+    break_ms = 350
+    if total_length and total_length >= 15000:
+        if s in ('news', 'presenter'):
+            break_ms = 250
+        elif s in ('narrative', 'storytelling'):
+            break_ms = 500
+        else:
+            break_ms = 350
+    def esc(x):
+        return x.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    safe = esc(text)
+    t = re.sub(r"([\.!\?])\s+", rf"\1 <break time=\"{break_ms}ms\"/> ", safe)
+    rate = 'medium'
+    if s in ('news', 'enthusiastic'):
+        rate = 'fast'
+    elif s in ('narrative', 'storytelling'):
+        rate = 'slow'
+    else:
+        rate = 'medium'
+    return f"<speak><prosody rate=\"{rate}\">{t}</prosody></speak>"
+
+def get_default_voice_name(language_code):
+    """Obtener una voz por defecto válida para el idioma indicado"""
+    defaults = {
+        'es-ES': 'es-ES-Standard-A',
+        'es-MX': 'es-MX-Standard-A',
+        'en-US': 'en-US-Standard-A',
+        'en-GB': 'en-GB-Standard-A',
+        'fr-FR': 'fr-FR-Standard-A',
+        'de-DE': 'de-DE-Standard-A',
+        'it-IT': 'it-IT-Standard-A',
+        'pt-BR': 'pt-BR-Standard-A',
+        'ja-JP': 'ja-JP-Standard-A',
+        'ko-KR': 'ko-KR-Standard-A',
+        'zh-CN': 'cmn-CN-Standard-A'
+    }
+    return defaults.get(language_code, CONFIG.get('default_voice_name', 'es-ES-Standard-A'))
+
+@app.route('/api/clear-gcs', methods=['POST'])
+def clear_gcs():
+    try:
+        if storage_client is None:
+            raise RuntimeError('Cliente de Storage no inicializado')
+        bucket = storage_client.bucket(BUCKET_NAME)
+        total_deleted = 0
+        total_size = 0
+        batch = []
+        for blob in bucket.list_blobs():
+            try:
+                total_size += getattr(blob, 'size', 0) or 0
+            except Exception:
+                pass
+            batch.append(blob)
+            if len(batch) >= 100:
+                bucket.delete_blobs(batch)
+                total_deleted += len(batch)
+                batch = []
+        if batch:
+            bucket.delete_blobs(batch)
+            total_deleted += len(batch)
+        logger.info(f"🗑️ Bucket limpiado: {total_deleted} objetos eliminados")
+        return jsonify({
+            'success': True,
+            'deleted': total_deleted,
+            'freed_size': format_file_size(total_size)
+        })
+    except Exception as e:
+        logger.error(f"❌ Error limpiando bucket: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/gcs-usage', methods=['GET'])
+def gcs_usage():
+    try:
+        if storage_client is None:
+            raise RuntimeError('Cliente de Storage no inicializado')
+        bucket = storage_client.bucket(BUCKET_NAME)
+        total_size = 0
+        count = 0
+        for blob in bucket.list_blobs():
+            count += 1
+            try:
+                total_size += getattr(blob, 'size', 0) or 0
+            except Exception:
+                pass
+        return jsonify({
+            'success': True,
+            'count': count,
+            'total_size': total_size,
+            'formatted_size': format_file_size(total_size)
+        })
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo uso del bucket: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/gcs-list', methods=['GET'])
+def gcs_list():
+    try:
+        if storage_client is None:
+            raise RuntimeError('Cliente de Storage no inicializado')
+        bucket = storage_client.bucket(BUCKET_NAME)
+        items = []
+        for blob in bucket.list_blobs():
+            item = {
+                'name': blob.name,
+                'size': (getattr(blob, 'size', 0) or 0),
+                'content_type': getattr(blob, 'content_type', None)
+            }
+            try:
+                item['updated'] = blob.updated.isoformat() if blob.updated else None
+            except Exception:
+                item['updated'] = None
+            items.append(item)
+        return jsonify({'success': True, 'items': items})
+    except Exception as e:
+        logger.error(f"❌ Error listando contenido del bucket: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/merge-videos', methods=['POST'])
 def merge_videos():

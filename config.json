@@ -1,22 +1,4 @@
 {
   "app_name": "VideoWorkshop",
-  "app_description": "Taller de video con subtitulación, audio y edición",
-  "host": "127.0.0.1",
-  "port": 5050,
-  "debug": true,
-  "auto_reload": true,
-  "default_source_lang": "en-US",
-  "default_target_lang": "es",
-  "theme": "auto",
-  "audio_sample_rate": 16000,
-  "audio_quality": "optimized",
-  "audio_channels": "mono",
-  "audio_optimization": "dialogue",
-  "default_model": "latest_short",
-  "default_voice_language": "es-ES",
-  "default_voice_name": "es-ES-Standard-A",
-  "default_audio_format": "mp3",
-  "default_speaking_rate": 1.0,
-  "default_pitch": 0.0,
-  "default_volume_gain_db": 0.0
+  "app_description": "Taller de video con subtitulación, audio y edición"
 }

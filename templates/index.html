@@ -204,38 +204,59 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="speakingRate">Velocidad de Habla:</label>
-                        <select id="speakingRate" name="speaking_rate">
-                            <option value="0.25">Muy Lenta (0.25x)</option>
-                            <option value="0.5">Lenta (0.5x)</option>
-                            <option value="0.75">Algo Lenta (0.75x)</option>
-                            <option value="1.0" selected>Normal (1.0x)</option>
-                            <option value="1.25">Algo Rápida (1.25x)</option>
-                            <option value="1.5">Rápida (1.5x)</option>
-                            <option value="2.0">Muy Rápida (2.0x)</option>
+                        <label for="voiceStyle">Estilo de Voz:</label>
+                        <select id="voiceStyle" name="voice_style">
+                            <option value="none" selected>Ninguno</option>
+                            <option value="conversational">Conversacional</option>
+                            <option value="narrative">Narrativo</option>
+                            <option value="news">Noticias</option>
+                            <option value="presenter">Presentador</option>
+                            <option value="storytelling">Storytelling</option>
+                            <option value="enthusiastic">Entusiasta</option>
+                            <option value="calm">Sereno</option>
+                            <option value="advertising">Publicitario</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-row controls-inline">
+                    <div class="form-group">
+                        <label for="speakingRate">Velocidad de Habla:</label>
+                        <div class="numeric-input">
+                            <button type="button" id="speakingRateDecrement" class="btn btn-secondary">−</button>
+                            <input type="number" id="speakingRate" name="speaking_rate" min="0.25" max="2.0" step="0.1" value="1.0" class="number-field">
+                            <button type="button" id="speakingRateIncrement" class="btn btn-secondary">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pitch">Tono:</label>
+                        <div class="numeric-input">
+                            <button type="button" id="pitchDecrement" class="btn btn-secondary">−</button>
+                            <input type="number" id="pitch" name="pitch" min="-20" max="20" step="0.1" value="0.0" class="number-field">
+                            <button type="button" id="pitchIncrement" class="btn btn-secondary">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="volumeGainDb">Volumen:</label>
+                        <div class="numeric-input">
+                            <button type="button" id="volumeGainDecrement" class="btn btn-secondary">−</button>
+                            <input type="number" id="volumeGainDb" name="volume_gain_db" min="-16" max="16" step="0.1" value="0.0" class="number-field">
+                            <button type="button" id="volumeGainIncrement" class="btn btn-secondary">+</button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="pitch">Tono:</label>
-                        <select id="pitch" name="pitch">
-                            <option value="-20.0">Muy Grave (-20.0)</option>
-                            <option value="-10.0">Grave (-10.0)</option>
-                            <option value="0.0" selected>Normal (0.0)</option>
-                            <option value="10.0">Agudo (10.0)</option>
-                            <option value="20.0">Muy Agudo (20.0)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="volumeGainDb">Volumen:</label>
-                        <select id="volumeGainDb" name="volume_gain_db">
-                            <option value="-16.0">Muy Bajo (-16.0)</option>
-                            <option value="-8.0">Bajo (-8.0)</option>
-                            <option value="0.0" selected>Normal (0.0)</option>
-                            <option value="8.0">Alto (8.0)</option>
-                            <option value="16.0">Muy Alto (16.0)</option>
+                        <label for="effectsProfileId">Perfil de Audio:</label>
+                        <select id="effectsProfileId" name="effects_profile_id">
+                            <option value="">Ninguno</option>
+                            <option value="headphone-class-device">Auriculares</option>
+                            <option value="small-bluetooth-speaker-class-device">Altavoz pequeño Bluetooth</option>
+                            <option value="telephony-class-application">Telefonía</option>
+                            <option value="wearable-class-device">Wearable</option>
+                            <option value="large-home-entertainment-class-device">Entretenimiento en casa</option>
+                            <option value="car-class-device">Coche</option>
                         </select>
                     </div>
                 </div>
@@ -677,6 +698,35 @@
                             <span class="btn-icon">🗑️</span>
                             Limpiar Todo
                         </button>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>☁️ Google Cloud Storage</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <button type="button" onclick="viewGcsBucket()" class="btn btn-secondary">
+                                <span class="btn-icon">📂</span>
+                                Ver Contenido del Bucket
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" onclick="clearGcsBucket()" class="btn btn-danger">
+                                <span class="btn-icon">🗑️</span>
+                                Vaciar Bucket de Google Cloud
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <span id="gcsUsageText" class="usage-text">Espacio usado: -</span>
+                        </div>
+                    </div>
+                    <div id="gcsBucketResults" class="results-section" style="display: none;">
+                        <div class="results-header">
+                            <h3>📂 Contenido del Bucket</h3>
+                        </div>
+                        <div class="results-content">
+                            <div id="gcsBucketList" class="transcript-box"></div>
+                        </div>
                     </div>
                 </div>
 

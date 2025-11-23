@@ -1,6 +1,7 @@
 // Variables globales
 let currentSubtitles = null;
 let currentAudioUrl = null;
+let currentAudioFilename = null;
 let currentMergedVideoUrl = null;
 let currentLoopVideoUrl = null;
 
@@ -199,6 +200,54 @@ function setupEventListeners() {
     if (textFile) {
         textFile.addEventListener('change', handleTextFileSelect);
     }
+
+    const pitchInput = document.getElementById('pitch');
+    const pitchInc = document.getElementById('pitchIncrement');
+    const pitchDec = document.getElementById('pitchDecrement');
+    function clampPitch(v) { return Math.min(20, Math.max(-20, v)); }
+    function setPitch(v) { if (pitchInput) pitchInput.value = clampPitch(parseFloat(v)).toFixed(1); }
+    if (pitchInput) {
+        pitchInput.addEventListener('input', () => setPitch(pitchInput.value));
+        pitchInput.addEventListener('blur', () => setPitch(pitchInput.value));
+    }
+    if (pitchInc) {
+        pitchInc.addEventListener('click', () => { const v = parseFloat(pitchInput.value || '0'); setPitch((v + 0.1).toFixed(1)); });
+    }
+    if (pitchDec) {
+        pitchDec.addEventListener('click', () => { const v = parseFloat(pitchInput.value || '0'); setPitch((v - 0.1).toFixed(1)); });
+    }
+
+    const rateInput = document.getElementById('speakingRate');
+    const rateInc = document.getElementById('speakingRateIncrement');
+    const rateDec = document.getElementById('speakingRateDecrement');
+    function clampRate(v) { return Math.min(2.0, Math.max(0.25, v)); }
+    function setRate(v) { if (rateInput) rateInput.value = clampRate(parseFloat(v)).toFixed(1); }
+    if (rateInput) {
+        rateInput.addEventListener('input', () => setRate(rateInput.value));
+        rateInput.addEventListener('blur', () => setRate(rateInput.value));
+    }
+    if (rateInc) {
+        rateInc.addEventListener('click', () => { const v = parseFloat(rateInput.value || '1.0'); setRate((v + 0.1).toFixed(1)); });
+    }
+    if (rateDec) {
+        rateDec.addEventListener('click', () => { const v = parseFloat(rateInput.value || '1.0'); setRate((v - 0.1).toFixed(1)); });
+    }
+
+    const volInput = document.getElementById('volumeGainDb');
+    const volInc = document.getElementById('volumeGainIncrement');
+    const volDec = document.getElementById('volumeGainDecrement');
+    function clampVol(v) { return Math.min(16.0, Math.max(-16.0, v)); }
+    function setVol(v) { if (volInput) volInput.value = clampVol(parseFloat(v)).toFixed(1); }
+    if (volInput) {
+        volInput.addEventListener('input', () => setVol(volInput.value));
+        volInput.addEventListener('blur', () => setVol(volInput.value));
+    }
+    if (volInc) {
+        volInc.addEventListener('click', () => { const v = parseFloat(volInput.value || '0.0'); setVol((v + 0.1).toFixed(1)); });
+    }
+    if (volDec) {
+        volDec.addEventListener('click', () => { const v = parseFloat(volInput.value || '0.0'); setVol((v - 0.1).toFixed(1)); });
+    }
     
     // Selector de idioma de voz
     const voiceLanguage = document.getElementById('voiceLanguage');
@@ -264,6 +313,8 @@ function setupEventListeners() {
     
     // Cargar pestañas dinámicas
     loadDynamicTabs();
+    
+    fetchGcsUsage();
     
     console.log('✅ Event listeners configurados');
 }
@@ -536,11 +587,14 @@ function showTextResults(result) {
     
     // Guardar URL del audio
     currentAudioUrl = result.audio_url;
+    currentAudioFilename = result.filename || 'audio.mp3';
+    const lowerName = currentAudioFilename.toLowerCase();
+    const mimeType = lowerName.endsWith('.wav') ? 'audio/wav' : lowerName.endsWith('.ogg') ? 'audio/ogg' : 'audio/mpeg';
     
     // Mostrar reproductor de audio
     audioPlayer.innerHTML = `
         <audio controls style="width: 100%;">
-            <source src="${result.audio_url}" type="audio/mpeg">
+            <source src="${result.audio_url}" type="${mimeType}">
             Tu navegador no soporta el elemento audio.
         </audio>
     `;
@@ -557,7 +611,7 @@ function downloadAudio() {
     if (currentAudioUrl) {
         const link = document.createElement('a');
         link.href = currentAudioUrl;
-        link.download = 'audio.mp3';
+        link.download = currentAudioFilename || 'audio';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -606,6 +660,11 @@ function updateVoiceOptions() {
         optionElement.textContent = option.text;
         voiceNameSelect.appendChild(optionElement);
     });
+
+    // Seleccionar automáticamente la primera voz disponible para evitar nombre vacío
+    if (voiceOptions.length > 0) {
+        voiceNameSelect.value = voiceOptions[0].value;
+    }
 }
 
 // Obtener opciones de voz para un idioma
@@ -624,6 +683,14 @@ function getVoiceOptionsForLanguage(language) {
             { value: 'es-ES-Wavenet-B', text: 'Masculino WaveNet' },
             { value: 'es-ES-Wavenet-C', text: 'Femenina WaveNet 2' },
             { value: 'es-ES-Wavenet-D', text: 'Masculino WaveNet 2' }
+        ],
+        'es-MX': [
+            { value: 'es-MX-Standard-A', text: 'Femenina Normal' },
+            { value: 'es-MX-Standard-B', text: 'Masculino Normal' },
+            { value: 'es-MX-Neural2-A', text: 'Femenina Neural' },
+            { value: 'es-MX-Neural2-B', text: 'Masculino Neural' },
+            { value: 'es-MX-Wavenet-A', text: 'Femenina WaveNet' },
+            { value: 'es-MX-Wavenet-B', text: 'Masculino WaveNet' }
         ],
         'en-US': [
             { value: 'en-US-Standard-A', text: 'Female Normal' },
@@ -644,6 +711,14 @@ function getVoiceOptionsForLanguage(language) {
             { value: 'en-US-Wavenet-D', text: 'Male WaveNet 2' },
             { value: 'en-US-Wavenet-E', text: 'Female WaveNet 3' },
             { value: 'en-US-Wavenet-F', text: 'Male WaveNet 3' }
+        ],
+        'en-GB': [
+            { value: 'en-GB-Standard-A', text: 'Female Normal' },
+            { value: 'en-GB-Standard-B', text: 'Male Normal' },
+            { value: 'en-GB-Neural2-A', text: 'Female Neural' },
+            { value: 'en-GB-Neural2-B', text: 'Male Neural' },
+            { value: 'en-GB-Wavenet-A', text: 'Female WaveNet' },
+            { value: 'en-GB-Wavenet-B', text: 'Male WaveNet' }
         ],
         'fr-FR': [
             { value: 'fr-FR-Standard-A', text: 'Féminine Normale' },
@@ -694,6 +769,24 @@ function getVoiceOptionsForLanguage(language) {
             { value: 'pt-BR-Neural2-B', text: 'Masculino Neural' },
             { value: 'pt-BR-Wavenet-A', text: 'Feminina WaveNet' },
             { value: 'pt-BR-Wavenet-B', text: 'Masculino WaveNet' }
+        ],
+        'ja-JP': [
+            { value: 'ja-JP-Standard-A', text: '女性 標準' },
+            { value: 'ja-JP-Standard-B', text: '男性 標準' },
+            { value: 'ja-JP-Wavenet-A', text: '女性 WaveNet' },
+            { value: 'ja-JP-Wavenet-B', text: '男性 WaveNet' }
+        ],
+        'ko-KR': [
+            { value: 'ko-KR-Standard-A', text: '여성 표준' },
+            { value: 'ko-KR-Standard-B', text: '남성 표준' },
+            { value: 'ko-KR-Wavenet-A', text: '여성 WaveNet' },
+            { value: 'ko-KR-Wavenet-B', text: '남성 WaveNet' }
+        ],
+        'zh-CN': [
+            { value: 'cmn-CN-Standard-A', text: '女声 普通话' },
+            { value: 'cmn-CN-Standard-B', text: '男声 普通话' },
+            { value: 'cmn-CN-Wavenet-A', text: '女声 WaveNet' },
+            { value: 'cmn-CN-Wavenet-B', text: '男声 WaveNet' }
         ]
     };
     
@@ -1169,6 +1262,59 @@ async function saveServerConfig(event) {
     }
 }
 
+async function fetchGcsUsage() {
+    try {
+        const el = document.getElementById('gcsUsageText');
+        if (!el) return;
+        const response = await fetch('/api/gcs-usage');
+        const result = await response.json();
+        if (result.success) {
+            el.textContent = `Espacio usado: ${result.formatted_size} (${result.count} objetos)`;
+        }
+    } catch (error) {
+        console.error('Error obteniendo uso del bucket:', error);
+    }
+}
+
+async function clearGcsBucket() {
+    try {
+        const proceed = confirm('¿Seguro que quieres vaciar el bucket de Google Cloud?');
+        if (!proceed) return;
+        const response = await fetch('/api/clear-gcs', { method: 'POST' });
+        const result = await response.json();
+        if (result.success) {
+            showNotification(`Bucket vaciado: ${result.deleted} objetos, ${result.freed_size} liberados`, 'success');
+            fetchGcsUsage();
+        } else {
+            throw new Error(result.error || 'Error desconocido');
+        }
+    } catch (error) {
+        showNotification(`Error: ${error.message}`, 'error');
+        console.error('Error vaciando bucket:', error);
+    }
+}
+
+async function viewGcsBucket() {
+    try {
+        const response = await fetch('/api/gcs-list');
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Error desconocido');
+        }
+        const listEl = document.getElementById('gcsBucketList');
+        const section = document.getElementById('gcsBucketResults');
+        if (!listEl || !section) return;
+        const items = result.items || [];
+        const lines = items.map(i => `${i.name} — ${formatFileSize(i.size)}${i.updated ? ` — ${i.updated}` : ''}`);
+        listEl.textContent = lines.length ? lines.join('\n') : 'Bucket vacío';
+        section.style.display = 'block';
+        showNotification(`Contenido cargado (${items.length} objetos)`, 'info');
+    } catch (error) {
+        showNotification(`Error: ${error.message}`, 'error');
+        console.error('Error listando bucket:', error);
+    }
+}
+
 // Procesar unión de videos
 async function processVideoMerge(event) {
     event.preventDefault();
@@ -1537,3 +1683,5 @@ window.toggleTodo = toggleTodo;
 window.deleteTodo = deleteTodo;
 window.processVideoMerge = processVideoMerge;
 window.createVideoLoop = createVideoLoop;
+window.clearGcsBucket = clearGcsBucket;
+window.viewGcsBucket = viewGcsBucket;

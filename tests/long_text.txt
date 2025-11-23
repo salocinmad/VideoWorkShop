@@ -1,0 +1,34 @@
+Este es un texto de prueba muy largo para verificar la codificación de texto a voz por chunks y estilos SSML. 
+Repetiremos frases para alcanzar una longitud significativa y así evaluar el manejo de pausas, prosodia y límites de tamaño del request.
+
+"La narrativa necesita ritmo." ¿Cómo se logra? Con pausas naturales, énfasis moderado y una velocidad constante.
+¡También probaremos estilos más rápidos como noticias y presentador!
+
+Fin del bloque introductorio.
+
+============================================================
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. Nullam quis risus eget urna mollis ornare vel eu leo.
+
+============================================================
+
+Repeticiones para alargar el contenido:
+
+1) Bloque A: 
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus.
+2) Bloque B: 
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+3) Bloque C: 
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt.
+
+============================================================
+
+Para asegurar longitud, se repite el siguiente párrafo 150 veces:
+
+Párrafo base: La prosodia define el carácter de una voz; con SSML se ajusta el énfasis y la velocidad. Con pausas adecuadas, el oyente comprende mejor.
+
+============================================================
+
+FIN
