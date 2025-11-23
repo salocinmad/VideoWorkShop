@@ -174,7 +174,27 @@ def load_env_file():
                         os.environ[key.strip()] = value.strip()
             logger.info("✅ Variables de entorno cargadas desde .env")
         else:
-            logger.warning("⚠️ Archivo .env no encontrado, usando variables de entorno del sistema")
+            # Intentar crear .env desde ejemplo o mínimo
+            try:
+                if os.path.exists('env.example'):
+                    with open('env.example', 'r', encoding='utf-8') as src, open('.env', 'w', encoding='utf-8') as dst:
+                        dst.write(src.read())
+                    logger.info("📝 .env creado desde env.example")
+                else:
+                    with open('.env', 'w', encoding='utf-8') as dst:
+                        dst.write("HOST=0.0.0.0\nPORT=5050\nDEBUG=true\n")
+                    logger.info("📝 .env básico creado (HOST/PORT/DEBUG)")
+                # Cargar nuevamente
+                with open('.env', 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            os.environ[key.strip()] = value.strip()
+                logger.info("✅ Variables de entorno cargadas desde nuevo .env")
+            except Exception as ce:
+                logger.warning(f"⚠️ No se pudo crear .env: {ce}")
+                logger.warning("⚠️ Usando variables de entorno del sistema")
     except Exception as e:
         logger.error(f"❌ Error cargando archivo .env: {e}")
 
@@ -206,8 +226,7 @@ except Exception as e:
 # Configuración de Google Cloud Storage
 BUCKET_NAME = os.getenv('GOOGLE_STORAGE_BUCKET')
 if not BUCKET_NAME:
-    logger.error("❌ GOOGLE_STORAGE_BUCKET no está configurado en las variables de entorno")
-    raise ValueError("GOOGLE_STORAGE_BUCKET es requerido")
+    logger.warning("⚠️ GOOGLE_STORAGE_BUCKET no está configurado; se usará almacenamiento local hasta configurar .env")
 
 def get_language_model(source_lang):
     """Determinar el modelo de idioma basado en el idioma de origen"""
@@ -244,8 +263,9 @@ def upload_audio_to_gcs(audio_path, blob_name):
 def upload_audio_to_gcs_public(audio_path, blob_name):
     """Subir archivo de audio a Google Cloud Storage y retornar URL firmada"""
     try:
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(blob_name)
+        if storage_client and BUCKET_NAME:
+            bucket = storage_client.bucket(BUCKET_NAME)
+            blob = bucket.blob(blob_name)
         
         # Determinar content type basado en la extensión
         if blob_name.endswith('.mp3'):
@@ -257,21 +277,26 @@ def upload_audio_to_gcs_public(audio_path, blob_name):
         else:
             content_type = 'audio/mpeg'
         
-        with open(audio_path, 'rb') as audio_file:
-            blob.upload_from_file(audio_file, content_type=content_type)
-        
-        # Generar URL firmada válida por 1 hora
-        from datetime import datetime, timedelta, timezone
-        expiration = datetime.now(timezone.utc) + timedelta(hours=1)
-        
-        audio_url = blob.generate_signed_url(
-            version="v4",
-            expiration=expiration,
-            method="GET"
-        )
-        
-        logger.info(f"☁️ Audio subido a GCS con URL firmada: {audio_url}")
-        return audio_url
+        if storage_client and BUCKET_NAME:
+            with open(audio_path, 'rb') as audio_file:
+                blob.upload_from_file(audio_file, content_type=content_type)
+            # Generar URL firmada válida por 1 hora
+            from datetime import datetime, timedelta, timezone
+            expiration = datetime.now(timezone.utc) + timedelta(hours=1)
+            audio_url = blob.generate_signed_url(version="v4", expiration=expiration, method="GET")
+            logger.info(f"☁️ Audio subido a GCS con URL firmada: {audio_url}")
+            return audio_url
+        else:
+            # Fallback local
+            import shutil
+            base_dir = os.path.join(os.path.dirname(__file__), 'static', 'audio', 'synthesized')
+            os.makedirs(base_dir, exist_ok=True)
+            dest_name = os.path.basename(blob_name)
+            dest_path = os.path.join(base_dir, dest_name)
+            shutil.copyfile(audio_path, dest_path)
+            local_url = f"/static/audio/synthesized/{dest_name}"
+            logger.info(f"💾 Audio almacenado localmente: {local_url}")
+            return local_url
         
     except Exception as e:
         logger.error(f"❌ Error subiendo audio a GCS: {e}")
@@ -280,16 +305,25 @@ def upload_audio_to_gcs_public(audio_path, blob_name):
 def upload_video_to_gcs(video_path, blob_name):
     """Subir archivo de video a Google Cloud Storage"""
     try:
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(blob_name)
-        
-        with open(video_path, 'rb') as video_file:
-            blob.upload_from_file(video_file, content_type='video/mp4')
-        
-        # Retornar URL pública
-        video_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{blob_name}"
-        logger.info(f"☁️ Video subido a GCS: {video_url}")
-        return video_url
+        if storage_client and BUCKET_NAME:
+            bucket = storage_client.bucket(BUCKET_NAME)
+            blob = bucket.blob(blob_name)
+            with open(video_path, 'rb') as video_file:
+                blob.upload_from_file(video_file, content_type='video/mp4')
+            video_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{blob_name}"
+            logger.info(f"☁️ Video subido a GCS: {video_url}")
+            return video_url
+        else:
+            # Fallback local
+            import shutil
+            base_dir = os.path.join(os.path.dirname(__file__), 'static', 'videos', 'uploads')
+            os.makedirs(base_dir, exist_ok=True)
+            dest_name = os.path.basename(blob_name)
+            dest_path = os.path.join(base_dir, dest_name)
+            shutil.copyfile(video_path, dest_path)
+            local_url = f"/static/videos/uploads/{dest_name}"
+            logger.info(f"💾 Video almacenado localmente: {local_url}")
+            return local_url
         
     except Exception as e:
         logger.error(f"❌ Error subiendo video a GCS: {e}")
